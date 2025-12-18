@@ -21,6 +21,7 @@ class SubjectAnalysisTab:
         self.selected_subjects_codes = []
         self.analysis_results = {}  # key = MaMH
         self.listbox_subjects = None
+        self.all_subjects_list = []   # lưu toàn bộ môn để filter
         # Tạo giao diện
         self.create_layout()
     
@@ -280,7 +281,18 @@ class SubjectAnalysisTab:
             font=("Arial", 11, "bold"),
             pady=8
         ).pack(fill="x")
+          # Ô tìm kiếm môn học
+        self.entry_search_subject = tk.Entry(left_report)
+        self.entry_search_subject.pack(
+            fill="x",
+            padx=5,
+            pady=(5, 3)
+        )
 
+        self.entry_search_subject.bind(
+            "<KeyRelease>",
+            self.filter_subject_list
+        )
         self.listbox_subjects = tk.Listbox(
             left_report,
             font=("Consolas", 10)
@@ -318,7 +330,6 @@ class SubjectAnalysisTab:
 
         scroll_report.pack(side=tk.RIGHT, fill="y")
         self.txt_report.pack(side=tk.LEFT, fill="both", expand=True)
-
     
     # ================= LOGIC XỬ LÝ =================
     
@@ -508,17 +519,18 @@ class SubjectAnalysisTab:
 
             self.txt_report.insert(
                 tk.END,
-                "👉 Chọn một học phần bên trái để xem phân tích chi tiết.\n",
+                "Chọn một học phần bên trái để xem phân tích chi tiết.\n",
                 "content"
             )
 
             # 7. Đổ danh sách môn vào Listbox (click được)
+            self.all_subjects_list = [
+                f"{row['MaMH']} - {row['TenMH']}"
+                for row in results
+            ]
             self.listbox_subjects.delete(0, tk.END)
-            for row in results:
-                self.listbox_subjects.insert(
-                    tk.END,
-                    f"{row['MaMH']} - {row['TenMH']}"
-                )
+            for item in self.all_subjects_list:
+                self.listbox_subjects.insert(tk.END, item)
 
             messagebox.showinfo(
                 "Hoàn tất",
@@ -583,5 +595,16 @@ class SubjectAnalysisTab:
             f"- Nhận định: {row['XuHuong']}\n",
             "content"
         )
+    def filter_subject_list(self, event=None):
+        if not self.all_subjects_list:
+            return
+
+        keyword = self.entry_search_subject.get().strip().lower()
+        self.listbox_subjects.delete(0, tk.END)
+
+        for item in self.all_subjects_list:
+            if keyword in item.lower():
+                self.listbox_subjects.insert(tk.END, item)
+
 
             
