@@ -123,3 +123,42 @@ class SubjectAnalyzer:
             report_lines.append({"text": "\n" + "-" * 40 + "\n\n", "tag": "divider"})
         
         return report_lines
+
+    @staticmethod
+    def analyze_all_subjects(df_pandas):
+        """
+        Phân tích toàn bộ học phần
+        """
+        if df_pandas.empty:
+            return []
+
+        sdf = spark.createDataFrame(df_pandas)
+
+        sdf = sdf.withColumn(
+            "DoKho",
+            when(col("F%") > 15, "Khó")
+            .when(col("TB") < 6.0, "Khó")
+            .when(col("TB") >= 8.0, "Dễ")
+            .otherwise("Trung bình")
+        )
+
+        if "SD" in sdf.columns:
+            sdf = sdf.withColumn(
+                "ChatLuong",
+                when((col("SD") > 1.0) & (col("F%") > 10), "Không ổn định / Cần cải thiện")
+                .when((col("A%") + col("A+%") > 40) & (col("SD") < 0.7), "Tốt & đồng đều")
+                .otherwise("Ổn định")
+            )
+        else:
+            sdf = sdf.withColumn("ChatLuong", when(col("MaMH").isNotNull(), "Không có dữ liệu SD"))
+
+        sdf = sdf.withColumn(
+            "XuHuong",
+            when(col("TB") >= 7.5, "Tích cực")
+            .when(col("TB") < 5.0, "Tiêu cực")
+            .otherwise("Bình thường")
+        )
+
+        return sdf.select(
+            "MaMH", "TenMH", "DoKho", "ChatLuong", "XuHuong", "TB", "F%"
+        ).collect()
