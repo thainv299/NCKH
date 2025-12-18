@@ -19,7 +19,9 @@ class SubjectAnalysisTab:
         self.df_pandas_original = None
         self.df_pandas_current = None
         self.selected_subjects_codes = []
-        
+        self.analysis_results = {}  # key = MaMH
+        self.listbox_subjects = None
+        self.all_subjects_list = []   # lưu toàn bộ môn để filter
         # Tạo giao diện
         self.create_layout()
     
@@ -85,7 +87,7 @@ class SubjectAnalysisTab:
         
         tk.Button(
             frame_file, 
-            text="📂 Tải CSV", 
+            text="Tải CSV", 
             command=self.load_csv, 
             bg="#3498db", 
             fg="white"
@@ -122,7 +124,7 @@ class SubjectAnalysisTab:
         
         tk.Button(
             frame_search, 
-            text="🔍 Tìm", 
+            text="Tìm", 
             command=self.search_subject, 
             bg="#95a5a6", 
             fg="white"
@@ -163,7 +165,7 @@ class SubjectAnalysisTab:
         
         tk.Button(
             frame_search, 
-            text="❌ Xóa danh sách chọn", 
+            text="Xóa danh sách chọn", 
             command=self.clear_selection, 
             bg="#e74c3c", 
             fg="white"
@@ -206,7 +208,7 @@ class SubjectAnalysisTab:
         # 4. Nút Chạy Phân Tích - ĐẶT TRONG SCROLLABLE FRAME
         tk.Button(
             scrollable_frame,
-            text="📝 TẠO BÁO CÁO PHÂN TÍCH",
+            text="TẠO BÁO CÁO PHÂN TÍCH",
             command=self.generate_report,
             bg="#8e44ad", 
             fg="white",
@@ -221,14 +223,14 @@ class SubjectAnalysisTab:
         
         # TAB 1: Dữ liệu
         self.tab_data = tk.Frame(self.notebook, bg="white")
-        self.notebook.add(self.tab_data, text=" 📋 Dữ liệu Học phần ")
+        self.notebook.add(self.tab_data, text=" Dữ liệu Học phần ")
         
         search_df_frame = tk.Frame(self.tab_data, bg="#ecf0f1", height=40)
         search_df_frame.pack(fill="x")
         
         tk.Label(
             search_df_frame, 
-            text="🔍 Tìm kiếm trong bảng dữ liệu:", 
+            text="Tìm kiếm trong bảng dữ liệu:", 
             bg="#ecf0f1"
         ).pack(side=tk.LEFT, padx=10, pady=5)
         
@@ -258,36 +260,76 @@ class SubjectAnalysisTab:
         
         # TAB 2: Báo cáo
         self.tab_report = tk.Frame(self.notebook, bg="white")
-        self.notebook.add(self.tab_report, text=" 📄 Báo cáo Phân tích ")
-        
+        self.notebook.add(self.tab_report, text="Báo cáo Phân tích ")
+
+        # === Layout chia trái / phải ===
+        report_paned = tk.PanedWindow(
+            self.tab_report,
+            orient=tk.HORIZONTAL
+        )
+        report_paned.pack(fill="both", expand=True)
+
+        # --- Danh sách môn (bên trái) ---
+        left_report = tk.Frame(report_paned, width=250, bg="#f7f7f7")
+        report_paned.add(left_report, minsize=220)
+
+        tk.Label(
+            left_report,
+            text="DANH SÁCH HỌC PHẦN",
+            bg="#34495e",
+            fg="white",
+            font=("Arial", 11, "bold"),
+            pady=8
+        ).pack(fill="x")
+          # Ô tìm kiếm môn học
+        self.entry_search_subject = tk.Entry(left_report)
+        self.entry_search_subject.pack(
+            fill="x",
+            padx=5,
+            pady=(5, 3)
+        )
+
+        self.entry_search_subject.bind(
+            "<KeyRelease>",
+            self.filter_subject_list
+        )
+        self.listbox_subjects = tk.Listbox(
+            left_report,
+            font=("Consolas", 10)
+        )
+        self.listbox_subjects.pack(
+            fill="both",
+            expand=True,
+            padx=5,
+            pady=5
+        )
+
+        self.listbox_subjects.bind(
+            "<<ListboxSelect>>",
+            self.on_subject_click
+        )
+
+        # --- Nội dung báo cáo (bên phải) ---
+        right_report = tk.Frame(report_paned, bg="white")
+        report_paned.add(right_report)
+
         self.txt_report = tk.Text(
-            self.tab_report, 
-            font=("Consolas", 11), 
-            padx=20, 
+            right_report,
+            font=("Consolas", 11),
+            padx=20,
             pady=20
         )
+
         scroll_report = ttk.Scrollbar(
-            self.tab_report, 
+            right_report,
             command=self.txt_report.yview
         )
-        self.txt_report.config(yscrollcommand=scroll_report.set)
-        
+        self.txt_report.config(
+            yscrollcommand=scroll_report.set
+        )
+
         scroll_report.pack(side=tk.RIGHT, fill="y")
         self.txt_report.pack(side=tk.LEFT, fill="both", expand=True)
-        
-        # Định dạng text tags
-        self.txt_report.tag_configure(
-            "header", 
-            font=("Arial", 14, "bold"), 
-            foreground="#2980b9"
-        )
-        self.txt_report.tag_configure(
-            "subheader", 
-            font=("Arial", 11, "bold"), 
-            foreground="#2c3e50"
-        )
-        self.txt_report.tag_configure("content", font=("Consolas", 11))
-        self.txt_report.tag_configure("divider", foreground="#bdc3c7")
     
     # ================= LOGIC XỬ LÝ =================
     
@@ -424,59 +466,145 @@ class SubjectAnalysisTab:
             self.show_table(self.df_pandas_current)
     
     def generate_report(self):
-        """Tạo báo cáo phân tích"""
-        if not self.selected_subjects_codes:
-            messagebox.showwarning(
-                "Cảnh báo",
-                "Vui lòng chọn ít nhất một môn học!"
-            )
-            return
-        
+        """Tạo báo cáo phân tích (Tổng quan + Click môn)"""
+        # 1. Kiểm tra dữ liệu
         if self.df_pandas_original is None or self.df_pandas_original.empty:
             messagebox.showwarning(
                 "Cảnh báo",
                 "Chưa có dữ liệu nguồn!"
             )
             return
-        
+
         try:
-            # Phân tích bằng Spark
-            results = SubjectAnalyzer.analyze_subjects(
-                self.df_pandas_original,
-                self.selected_subjects_codes
+            # 2. Phân tích TOÀN BỘ môn (1 lần duy nhất)
+            results = SubjectAnalyzer.analyze_all_subjects(
+                self.df_pandas_original
             )
-            
+
             if not results:
                 messagebox.showwarning(
                     "Cảnh báo",
-                    "Không tìm thấy dữ liệu cho các học phần đã chọn!"
+                    "Không có dữ liệu học phần để phân tích!"
                 )
                 return
-            
-            # Tạo báo cáo
-            options = {
-                "dokho": self.ck_dokho.get(),
-                "chatluong": self.ck_chatluong.get(),
-                "xuhuong": self.ck_xuhuong.get()
+
+            # 3. Lưu kết quả phân tích để click dùng lại
+            self.analysis_results = {
+                row["MaMH"]: row for row in results
             }
-            
-            report_lines = SubjectAnalyzer.generate_report_text(results, options)
-            
-            # Hiển thị báo cáo
-            self.txt_report.delete(1.0, tk.END)
+
+            # 4. Chuyển sang tab báo cáo
             self.notebook.select(self.tab_report)
-            
+
+            # 5. Xóa nội dung cũ
+            self.txt_report.delete(1.0, tk.END)
+
+            # 6. HIỂN THỊ BÁO CÁO TỔNG QUAN
             self.txt_report.insert(
                 tk.END,
-                "BÁO CÁO PHÂN TÍCH HỌC PHẦN CHI TIẾT\n",
+                "BÁO CÁO TỔNG QUAN CÁC HỌC PHẦN\n",
                 "header"
             )
-            self.txt_report.insert(tk.END, "=" * 50 + "\n\n", "divider")
-            
-            for line in report_lines:
-                self.txt_report.insert(tk.END, line["text"], line["tag"])
-            
-            messagebox.showinfo("Hoàn tất", "Đã tạo báo cáo thành công!")
-            
+            self.txt_report.insert(
+                tk.END,
+                "=" * 50 + "\n\n",
+                "divider"
+            )
+
+            self.txt_report.insert(
+                tk.END,
+                f"Tổng số học phần được phân tích: {len(results)}\n\n",
+                "content"
+            )
+
+            self.txt_report.insert(
+                tk.END,
+                "Chọn một học phần bên trái để xem phân tích chi tiết.\n",
+                "content"
+            )
+
+            # 7. Đổ danh sách môn vào Listbox (click được)
+            self.all_subjects_list = [
+                f"{row['MaMH']} - {row['TenMH']}"
+                for row in results
+            ]
+            self.listbox_subjects.delete(0, tk.END)
+            for item in self.all_subjects_list:
+                self.listbox_subjects.insert(tk.END, item)
+
+            messagebox.showinfo(
+                "Hoàn tất",
+                "Đã tạo báo cáo tổng quan. Chọn môn để xem chi tiết!"
+            )
+
         except Exception as e:
-            messagebox.showerror("Lỗi Phân Tích", str(e))
+            messagebox.showerror(
+                "Lỗi phân tích",
+                str(e)
+            )
+    def on_subject_click(self, event):
+        if not self.analysis_results:
+            return
+
+        selection = self.listbox_subjects.curselection()
+        if not selection:
+            return
+
+        text = self.listbox_subjects.get(selection[0])
+        ma_mh = text.split(" - ")[0].strip()
+
+        row = self.analysis_results.get(ma_mh)
+        if not row:
+            return
+
+        # Xóa nội dung cũ
+        self.txt_report.delete(1.0, tk.END)
+
+        # Tiêu đề
+        self.txt_report.insert(
+            tk.END,
+            f"PHÂN TÍCH CHI TIẾT HỌC PHẦN\n{row['TenMH']} ({ma_mh})\n",
+            "header"
+        )
+        self.txt_report.insert(
+            tk.END,
+            "=" * 50 + "\n\n",
+            "divider"
+        )
+
+        # Nội dung
+        self.txt_report.insert(
+            tk.END,
+            f"1. Độ khó học phần:\n"
+            f"- Mức độ: {row['DoKho']}\n"
+            f"- Điểm trung bình: {row['TB']}\n"
+            f"- Tỷ lệ rớt: {row['F%']}%\n\n",
+            "content"
+        )
+
+        self.txt_report.insert(
+            tk.END,
+            f"2. Chất lượng giảng dạy:\n"
+            f"- Đánh giá: {row['ChatLuong']}\n\n",
+            "content"
+        )
+
+        self.txt_report.insert(
+            tk.END,
+            f"3. Xu hướng học tập:\n"
+            f"- Nhận định: {row['XuHuong']}\n",
+            "content"
+        )
+    def filter_subject_list(self, event=None):
+        if not self.all_subjects_list:
+            return
+
+        keyword = self.entry_search_subject.get().strip().lower()
+        self.listbox_subjects.delete(0, tk.END)
+
+        for item in self.all_subjects_list:
+            if keyword in item.lower():
+                self.listbox_subjects.insert(tk.END, item)
+
+
+            
