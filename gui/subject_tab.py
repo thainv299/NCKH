@@ -1,6 +1,3 @@
-"""
-Giao diện Tab phân tích học phần
-"""
 import tkinter as tk
 from tkinter import filedialog, ttk, messagebox
 import os
@@ -295,7 +292,8 @@ class SubjectAnalysisTab:
         )
         self.listbox_subjects = tk.Listbox(
             left_report,
-            font=("Consolas", 10)
+            font=("Consolas", 10),
+            activestyle='none' # Bỏ gạch chân khi chọn để đẹp hơn
         )
         self.listbox_subjects.pack(
             fill="both",
@@ -464,6 +462,49 @@ class SubjectAnalysisTab:
         if self.df_pandas_original is not None:
             self.df_pandas_current = self.df_pandas_original.copy()
             self.show_table(self.df_pandas_current)
+
+    def get_subject_color(self, ma_mh):
+        """
+        Xác định màu sắc dựa trên kết quả phân tích.
+        Sửa lỗi: Truy cập dữ liệu bằng [] thay vì .get() để tương thích với Spark Row.
+        """
+        # Lấy dữ liệu row
+        result = self.analysis_results.get(ma_mh)
+        
+        # Nếu không tìm thấy dữ liệu -> màu trắng
+        if not result:
+            return "white" 
+        
+        try:
+            # Dùng ngoặc vuông [] để lấy giá trị.
+            # Dùng str() để đảm bảo không lỗi nếu dữ liệu là None.
+            # Dùng lower() để so sánh không phân biệt hoa thường.
+            
+            xu_huong = str(result['XuHuong']).strip().lower()
+            chat_luong = str(result['ChatLuong']).strip().lower()
+            
+            # --- LOGIC TÔ MÀU THEO THỨ TỰ ƯU TIÊN ---
+            
+            # 1. TIÊU CỰC -> Màu ĐỎ (Cảnh báo cao nhất)
+            if "tiêu cực" in xu_huong:
+                return "#f8d7da" # Đỏ nhạt
+            
+            # 2. KHÔNG ỔN ĐỊNH / CẦN CẢI THIỆN -> Màu VÀNG (Cảnh báo trung bình)
+            # Kiểm tra xem trong chuỗi chất lượng có từ khóa cảnh báo không
+            if "không ổn định" in chat_luong or "cần cải thiện" in chat_luong:
+                return "#fff3cd" # Vàng nhạt
+            
+            # 3. TÍCH CỰC -> Màu XANH LÁ (Trạng thái tốt)
+            if "tích cực" in xu_huong:
+                return "#d4edda" # Xanh nhạt
+            
+            # 4. Các trường hợp còn lại (Bình thường, Ổn định...) -> Màu TRẮNG
+            return "white"
+                
+        except Exception as e:
+            # In lỗi ra terminal để debug
+            print(f"Lỗi tô màu môn {ma_mh}: {e}")
+            return "white"
     
     def generate_report(self):
         """Tạo báo cáo phân tích (Tổng quan + Click môn)"""
@@ -522,15 +563,26 @@ class SubjectAnalysisTab:
                 "Chọn một học phần bên trái để xem phân tích chi tiết.\n",
                 "content"
             )
+            self.txt_report.insert(
+                tk.END,
+                "(Màu xanh: Kết quả tốt | Màu đỏ: Cần lưu ý)\n",
+                "content"
+            )
 
-            # 7. Đổ danh sách môn vào Listbox (click được)
+            # 7. Đổ danh sách môn vào Listbox và tô màu
             self.all_subjects_list = [
                 f"{row['MaMH']} - {row['TenMH']}"
                 for row in results
             ]
             self.listbox_subjects.delete(0, tk.END)
-            for item in self.all_subjects_list:
+            
+            for index, item in enumerate(self.all_subjects_list):
                 self.listbox_subjects.insert(tk.END, item)
+                
+                # Lấy mã môn để tra cứu trạng thái và tô màu
+                ma_mh = item.split(" - ")[0].strip()
+                color = self.get_subject_color(ma_mh)
+                self.listbox_subjects.itemconfigure(index, bg=color)
 
             messagebox.showinfo(
                 "Hoàn tất",
@@ -542,6 +594,7 @@ class SubjectAnalysisTab:
                 "Lỗi phân tích",
                 str(e)
             )
+
     def on_subject_click(self, event):
         if not self.analysis_results:
             return
@@ -595,6 +648,7 @@ class SubjectAnalysisTab:
             f"- Nhận định: {row['XuHuong']}\n",
             "content"
         )
+
     def filter_subject_list(self, event=None):
         if not self.all_subjects_list:
             return
@@ -605,6 +659,10 @@ class SubjectAnalysisTab:
         for item in self.all_subjects_list:
             if keyword in item.lower():
                 self.listbox_subjects.insert(tk.END, item)
-
-
-            
+                
+                # Tô màu lại cho các item sau khi lọc
+                # Lấy index của item vừa chèn (là item cuối cùng)
+                current_idx = self.listbox_subjects.size() - 1
+                ma_mh = item.split(" - ")[0].strip()
+                color = self.get_subject_color(ma_mh)
+                self.listbox_subjects.itemconfigure(current_idx, bg=color)
