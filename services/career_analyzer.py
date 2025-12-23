@@ -42,7 +42,6 @@ class CareerAnalyzerSpark:
 
         if df.count() == 0:
             return None
-
         # ==========================
         # TÍNH ĐIỂM TRUNG BÌNH THEO NGÀNH
         # ==========================
