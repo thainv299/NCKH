@@ -7,3 +7,4 @@ __init__.py
 **/__init__.py
 __pycache__/
 data/
+.vscode/
