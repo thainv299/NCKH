@@ -1,7 +1,6 @@
 from pyspark.sql.functions import expr
 
 def transform_to_fact(df):
-    print(df.columns)
     subject_columns = [c for c in df.columns if c not in ["ma_sv", "ho_ten"]]
     stack_expr = "stack({}, {}) as (ma_mon, diem)".format(
         len(subject_columns),
