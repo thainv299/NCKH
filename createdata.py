@@ -36,7 +36,6 @@ for i in range(num_students):
         score = round(max(0, min(10, score)), 2)
         score = math.ceil(score * 10) / 10
         row[subject] = score
-    print("ok")
     data.append(row)
 
 df_demo = pd.DataFrame(data)
