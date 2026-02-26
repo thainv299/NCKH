@@ -1,6 +1,4 @@
-"""
-File khởi động chương trình chính
-"""
+
 import tkinter as tk
 from src.gui.main_window import MainWindow
 
