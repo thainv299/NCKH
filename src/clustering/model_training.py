@@ -2,8 +2,6 @@ from pyspark.ml.feature import VectorAssembler
 from pyspark.ml.clustering import KMeans
 
 def train_model(features):
-    features.show()
-    features.count()
     assembler = VectorAssembler(
         inputCols=["gpa", "std_score", "failed_subjects", "excellent_subjects"],
         outputCol="features"

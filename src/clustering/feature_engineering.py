@@ -1,7 +1,6 @@
 from pyspark.sql.functions import avg, stddev, sum, when, col
 
 def create_features(fact_score):
-    fact_score.show(20)
     features = fact_score.groupBy("ma_sv").agg(
         avg("diem").alias("gpa"),
         stddev("diem").alias("std_score"),
