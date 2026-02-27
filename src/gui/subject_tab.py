@@ -1,8 +1,8 @@
 import tkinter as tk
 from tkinter import filedialog, ttk, messagebox
 import os
-from utils.data_utils import load_csv_file
-from services.subject_analyzer import SubjectAnalyzer
+from src.utils.data_utils import load_csv_file
+from src.services.subject_analyzer import SubjectAnalyzer
 
 class SubjectAnalysisTab:
     """
