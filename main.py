@@ -1,8 +1,6 @@
-"""
-File khởi động chương trình chính
-"""
+
 import tkinter as tk
-from gui.main_window import MainWindow
+from src.gui.main_window import MainWindow
 
 if __name__ == "__main__":
     root = tk.Tk()
