@@ -2,7 +2,6 @@
 Xử lý logic phân tích học phần
 """
 from pyspark.sql.functions import col, when
-from config.spark_config import spark
 
 class SubjectAnalyzer:
     """
@@ -10,63 +9,58 @@ class SubjectAnalyzer:
     """
     
     @staticmethod
-    def analyze_subjects(df_pandas, selected_codes):
+    def analyze_subjects(sdf, selected_codes):
         """
-        Phân tích các học phần đã chọn
-        
-        Args:
-            df_pandas: DataFrame pandas chứa dữ liệu gốc
-            selected_codes: List các mã môn học cần phân tích
-            
-        Returns:
-            List các kết quả phân tích
+        sdf: Spark DataFrame
+        selected_codes: list mã môn
         """
-        # Lọc dữ liệu theo các mã đã chọn
-        df_filtered = df_pandas[df_pandas["MaMH"].isin(selected_codes)]
-        
-        if df_filtered.empty:
-            return []
-        
-        # Tạo Spark DataFrame
-        sdf = spark.createDataFrame(df_filtered)
-        
-        # 1. Phân tích độ khó
+
+        # Lọc bằng Spark (KHÔNG dùng pandas nữa)
+        sdf = sdf.filter(col("MaMH").isin(selected_codes))
+
+        # Ép kiểu số (quan trọng)
+        numeric_cols = ["TB", "F%", "SD", "A%", "A+%"]
+        for c in numeric_cols:
+            if c in sdf.columns:
+                sdf = sdf.withColumn(c, col(c).cast("double"))
+
+        # 1. Độ khó
         sdf = sdf.withColumn(
             "DoKho",
-            when(col("F%") > 15, "Khó")
-            .when(col("TB") < 6.0, "Khó")
+            when((col("TB") < 6.0) | (col("F%") > 15), "Khó")
             .when(col("TB") >= 8.0, "Dễ")
             .otherwise("Trung bình")
         )
-        
-        # 2. Phân tích chất lượng (nếu có cột SD)
-        if "SD" in sdf.columns:
+
+        # 2. Chất lượng
+        if "SD" in sdf.columns and "A%" in sdf.columns and "A+%" in sdf.columns:
             sdf = sdf.withColumn(
                 "ChatLuong",
-                when((col("SD") > 1.0) & (col("F%") > 10), "Không ổn định / Cần cải thiện")
-                .when((col("A%") + col("A+%") > 40) & (col("SD") < 0.7), "Tốt & đồng đều")
+                when((col("SD") > 1.0) & (col("F%") > 10),
+                     "Không ổn định / Cần cải thiện")
+                .when((col("A%") + col("A+%") > 40) & (col("SD") < 0.7),
+                      "Tốt & đồng đều")
                 .otherwise("Ổn định")
             )
         else:
             sdf = sdf.withColumn(
-                "ChatLuong", 
-                when(col("MaMH").isNotNull(), "Không có dữ liệu SD để đánh giá")
+                "ChatLuong",
+                when(col("MaMH").isNotNull(),
+                     "Không đủ dữ liệu đánh giá")
             )
-        
-        # 3. Phân tích xu hướng
+
+        # 3. Xu hướng
         sdf = sdf.withColumn(
             "XuHuong",
-            when(col("TB") >= 7.5, "Tích cực (Sinh viên học tốt)")
-            .when(col("TB") < 5.0, "Tiêu cực (Cần cảnh báo)")
+            when(col("TB") >= 7.5, "Tích cực")
+            .when(col("TB") < 5.0, "Tiêu cực")
             .otherwise("Bình thường")
         )
-        
-        # Collect kết quả
-        results = sdf.select(
-            "MaMH", "TenMH", "DoKho", "ChatLuong", "XuHuong", "TB", "F%"
-        ).collect()
-        
-        return results
+
+        return sdf.select(
+            "MaMH", "TenMH", "DoKho",
+            "ChatLuong", "XuHuong", "TB", "F%"
+        )
     
     @staticmethod
     def generate_report_text(results, options):
@@ -125,33 +119,39 @@ class SubjectAnalyzer:
         return report_lines
 
     @staticmethod
-    def analyze_all_subjects(df_pandas):
-        """
-        Phân tích toàn bộ học phần
-        """
-        if df_pandas.empty:
-            return []
+    def analyze_all_subjects(sdf):
 
-        sdf = spark.createDataFrame(df_pandas)
+        numeric_cols = ["TB", "F%", "SD", "A%", "A+%"]
+        for c in numeric_cols:
+            if c in sdf.columns:
+                sdf = sdf.withColumn(c, col(c).cast("double"))
 
+        # Độ khó
         sdf = sdf.withColumn(
             "DoKho",
-            when(col("F%") > 15, "Khó")
-            .when(col("TB") < 6.0, "Khó")
+            when((col("TB") < 6.0) | (col("F%") > 15), "Khó")
             .when(col("TB") >= 8.0, "Dễ")
             .otherwise("Trung bình")
         )
 
-        if "SD" in sdf.columns:
+        # Chất lượng
+        if "SD" in sdf.columns and "A%" in sdf.columns and "A+%" in sdf.columns:
             sdf = sdf.withColumn(
                 "ChatLuong",
-                when((col("SD") > 1.0) & (col("F%") > 10), "Không ổn định / Cần cải thiện")
-                .when((col("A%") + col("A+%") > 40) & (col("SD") < 0.7), "Tốt & đồng đều")
+                when((col("SD") > 1.0) & (col("F%") > 10),
+                    "Không ổn định / Cần cải thiện")
+                .when((col("A%") + col("A+%") > 40) & (col("SD") < 0.7),
+                    "Tốt & đồng đều")
                 .otherwise("Ổn định")
             )
         else:
-            sdf = sdf.withColumn("ChatLuong", when(col("MaMH").isNotNull(), "Không có dữ liệu SD"))
+            sdf = sdf.withColumn(
+                "ChatLuong",
+                when(col("MaMH").isNotNull(),
+                    "Không đủ dữ liệu đánh giá")
+            )
 
+        # Xu hướng
         sdf = sdf.withColumn(
             "XuHuong",
             when(col("TB") >= 7.5, "Tích cực")
@@ -160,5 +160,7 @@ class SubjectAnalyzer:
         )
 
         return sdf.select(
-            "MaMH", "TenMH", "DoKho", "ChatLuong", "XuHuong", "TB", "F%"
-        ).collect()
+            "MaMH", "TenMH",
+            "DoKho", "ChatLuong",
+            "XuHuong", "TB", "F%"
+        )

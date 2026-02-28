@@ -3,7 +3,7 @@ from tkinter import filedialog, ttk, messagebox
 import os
 from src.utils.data_utils import load_csv_file
 from src.services.subject_analyzer import SubjectAnalyzer
-
+from config.spark_config import spark
 class SubjectAnalysisTab:
     """
     Class quản lý giao diện và logic Tab phân tích học phần
@@ -342,6 +342,8 @@ class SubjectAnalysisTab:
             
             self.df_pandas_original = df.copy()
             self.df_pandas_current = df.copy()
+            self.spark_df = spark.createDataFrame(df)
+            self.spark_df.cache()
             self.selected_subjects_codes = []
             self.listbox_selected.delete(0, tk.END)
             
@@ -518,9 +520,10 @@ class SubjectAnalysisTab:
 
         try:
             # 2. Phân tích TOÀN BỘ môn (1 lần duy nhất)
-            results = SubjectAnalyzer.analyze_all_subjects(
-                self.df_pandas_original
+            result_sdf = SubjectAnalyzer.analyze_all_subjects(
+                self.spark_df
             )
+            results = result_sdf.collect()
 
             if not results:
                 messagebox.showwarning(
