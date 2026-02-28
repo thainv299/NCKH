@@ -13,8 +13,8 @@ class SubjectAnalysisTab:
         self.parent = parent_frame
         
         # Dữ liệu
-        self.df_pandas_original = None
-        self.df_pandas_current = None
+        # chỉ giữ Spark DataFrame, dùng pandas chỉ khi cần hiển thị
+        self.spark_df = None
         self.selected_subjects_codes = []
         self.analysis_results = {}  # key = MaMH
         self.listbox_subjects = None
@@ -293,7 +293,7 @@ class SubjectAnalysisTab:
         self.listbox_subjects = tk.Listbox(
             left_report,
             font=("Consolas", 10),
-            activestyle='none' # Bỏ gạch chân khi chọn để đẹp hơn
+            activestyle='none' # Bỏ gạch chân khi chọn 
         )
         self.listbox_subjects.pack(
             fill="both",
@@ -332,24 +332,26 @@ class SubjectAnalysisTab:
     # ================= LOGIC XỬ LÝ =================
     
     def load_csv(self):
-        """Tải file CSV"""
+        """Tải file CSV vào Spark DataFrame và hiển thị mẫu lên UI"""
         path = filedialog.askopenfilename(filetypes=[("CSV files", "*.csv")])
         if not path:
             return
         
         try:
-            df = load_csv_file(path)
-            
-            self.df_pandas_original = df.copy()
-            self.df_pandas_current = df.copy()
-            self.spark_df = spark.createDataFrame(df)
-            self.spark_df.cache()
+            # đọc thẳng bằng Spark (helper tự phát hiện dấu phân cách)
+            self.spark_df = load_csv_file(spark, path)
+            self.spark_df = self.spark_df.cache()
+
+            # reset lựa chọn
             self.selected_subjects_codes = []
             self.listbox_selected.delete(0, tk.END)
-            
-            self.show_table(df)
+
+            # tạo bảng mẫu để hiển thị (giới hạn số dòng để tránh chậm)
+            sample_df = self.spark_df.limit(2000).toPandas()
+            self.show_table(sample_df)
+            total = self.spark_df.count()
             self.lbl_file_status.config(
-                text=f"✓ {os.path.basename(path)} ({len(df)} dòng)", 
+                text=f"✓ {os.path.basename(path)} ({total} dòng)", 
                 fg="green"
             )
             messagebox.showinfo("Thành công", "Tải dữ liệu thành công!")
@@ -372,42 +374,49 @@ class SubjectAnalysisTab:
             self.tree.insert("", "end", values=list(row))
     
     def filter_dataframe_view(self, event=None):
-        """Tìm kiếm trong dataframe"""
-        if self.df_pandas_current is None:
+        """Tìm kiếm trong Spark DataFrame và cập nhật bảng hiển thị"""
+        # work directly with spark dataframe
+        if self.spark_df is None:
             return
-        
+
         keyword = self.entry_filter_df.get().strip().lower()
         if not keyword:
-            self.show_table(self.df_pandas_current)
+            df = self.spark_df.limit(2000).toPandas()
+            self.show_table(df)
             return
-        
-        df_str = self.df_pandas_current.astype(str)
-        mask = df_str.apply(
-            lambda col: col.str.lower().str.contains(keyword, na=False, regex=False)
-        ).any(axis=1)
-        
-        df_filtered = self.df_pandas_current[mask]
+
+        from pyspark.sql.functions import col
+
+        expr = None
+        for c in self.spark_df.columns:
+            cond = col(c).cast("string").rlike(f"(?i).*{keyword}.*")
+            expr = cond if expr is None else expr | cond
+
+        df_filtered = self.spark_df.filter(expr).limit(2000).toPandas()
         self.show_table(df_filtered)
     
     def search_subject(self):
-        """Tìm kiếm học phần"""
-        if self.df_pandas_original is None:
+        """Tìm kiếm học phần trong dữ liệu Spark"""
+        if self.spark_df is None:
             return
-        
+
         keyword = self.entry_search.get().strip().lower()
         if not keyword:
             return
-        
-        df = self.df_pandas_original
-        filtered = df[
-            (df['TenMH'].astype(str).str.lower().str.contains(keyword, na=False)) |
-            (df['MaMH'].astype(str).str.lower().str.contains(keyword, na=False))
-        ][['MaMH', 'TenMH']].drop_duplicates()
-        
-        suggestions = [
-            f"{row['MaMH']} - {row['TenMH']}" 
-            for _, row in filtered.iterrows()
-        ]
+
+        from pyspark.sql.functions import col
+
+        sdf = (
+            self.spark_df.select("MaMH", "TenMH")
+            .where(
+                (col("TenMH").cast("string").rlike(f"(?i).*{keyword}.*")) |
+                (col("MaMH").cast("string").rlike(f"(?i).*{keyword}.*"))
+            )
+            .distinct()
+        )
+
+        pandas_filtered = sdf.limit(1000).toPandas()
+        suggestions = [f"{row['MaMH']} - {row['TenMH']}" for _, row in pandas_filtered.iterrows()]
         self.combo_suggestions['values'] = suggestions
         if suggestions:
             self.combo_suggestions.current(0)
@@ -461,9 +470,9 @@ class SubjectAnalysisTab:
         """Xóa danh sách chọn"""
         self.selected_subjects_codes = []
         self.listbox_selected.delete(0, tk.END)
-        if self.df_pandas_original is not None:
-            self.df_pandas_current = self.df_pandas_original.copy()
-            self.show_table(self.df_pandas_current)
+        if self.spark_df is not None:
+            df = self.spark_df.limit(2000).toPandas()
+            self.show_table(df)
 
     def get_subject_color(self, ma_mh):
         """
@@ -504,14 +513,13 @@ class SubjectAnalysisTab:
             return "white"
                 
         except Exception as e:
-            # In lỗi ra terminal để debug
             print(f"Lỗi tô màu môn {ma_mh}: {e}")
             return "white"
     
     def generate_report(self):
         """Tạo báo cáo phân tích (Tổng quan + Click môn)"""
         # 1. Kiểm tra dữ liệu
-        if self.df_pandas_original is None or self.df_pandas_original.empty:
+        if self.spark_df is None:
             messagebox.showwarning(
                 "Cảnh báo",
                 "Chưa có dữ liệu nguồn!"
@@ -519,7 +527,7 @@ class SubjectAnalysisTab:
             return
 
         try:
-            # 2. Phân tích TOÀN BỘ môn (1 lần duy nhất)
+            # 2. Phân tích TOÀN BỘ môn
             result_sdf = SubjectAnalyzer.analyze_all_subjects(
                 self.spark_df
             )

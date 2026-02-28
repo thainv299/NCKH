@@ -42,17 +42,16 @@ class StudentPredictionTab:
             return
 
         try:
-            df = load_csv_file(path)
             spark = self.get_spark()
-            spark_df = spark.createDataFrame(df)
+            spark_df = load_csv_file(spark, path)
 
             result = StudentPredictorService.predict_students(
                 spark_df,
                 spark
             )
 
-            result_pd = result.toPandas()
-
+            # show result as pandas for Treeview
+            result_pd = result.limit(2000).toPandas()
             self.show_table(result_pd)
 
         except Exception as e:
