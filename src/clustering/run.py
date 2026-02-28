@@ -18,5 +18,4 @@ model, data = train_model(features)
 
 # 5. Evaluate
 clusters = evaluate(model, data)
-clusters.groupBy("prediction").count().show()
 clusters.show()

@@ -18,10 +18,10 @@ def load_csv_file(file_path):
     Đọc file CSV với encoding tự động
     """
     try:
-        df = pd.read_csv(file_path, encoding="utf-8")
+        df = pd.read_csv(file_path, encoding="utf-8", sep=";")
     except:
         try:
-            df = pd.read_csv(file_path, encoding="latin1")
+            df = pd.read_csv(file_path, encoding="latin1", sep=";")
         except Exception as e:
             raise Exception(f"Không thể đọc file: {str(e)}")
     

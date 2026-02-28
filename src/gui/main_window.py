@@ -3,9 +3,9 @@ Cửa sổ chính của ứng dụng
 """
 import tkinter as tk
 from tkinter import ttk
-from gui.subject_tab import SubjectAnalysisTab
-from gui.career_tab import CareerAnalysisTab
-
+from src.gui.subject_tab import SubjectAnalysisTab
+from src.gui.career_tab import CareerAnalysisTab
+from src.gui.prediction_tab import StudentPredictionTab
 class MainWindow:
     """
     Class quản lý cửa sổ chính và các tab
@@ -32,7 +32,6 @@ class MainWindow:
         style.theme_use("clam")
     
     def create_tabs(self):
-        """Tạo các tab chính"""
         # Tab 1: Phân tích học phần
         self.tab_subject = tk.Frame(self.notebook_main)
         self.notebook_main.add(self.tab_subject, text="Phân tích Học phần")
@@ -42,3 +41,8 @@ class MainWindow:
         self.tab_career = tk.Frame(self.notebook_main)
         self.notebook_main.add(self.tab_career, text="Xu hướng Nghề nghiệp SV")
         self.career_analysis = CareerAnalysisTab(self.tab_career)
+        
+        #Tab 3: Dự đoán mức độ nguy hiểm của sinh viên
+        self.tab_prediction = tk.Frame(self.notebook_main)
+        self.notebook_main.add(self.tab_prediction, text="Dự đoán học tập")
+        self.prediction_tab = StudentPredictionTab(self.tab_prediction)

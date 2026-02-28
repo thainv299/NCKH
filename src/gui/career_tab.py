@@ -3,8 +3,8 @@ from tkinter import filedialog, ttk, messagebox
 
 from pyspark.sql import SparkSession
 
-from utils.data_utils import load_csv_file
-from services.career_analyzer import CareerAnalyzerSpark as CareerAnalyzer
+from src.utils.data_utils import load_csv_file
+from src.services.career_analyzer import CareerAnalyzerSpark as CareerAnalyzer
 
 
 class CareerAnalysisTab:
