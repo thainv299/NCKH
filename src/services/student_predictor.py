@@ -117,6 +117,6 @@ class StudentPredictorService:
 
         result = result.orderBy("risk_order")
         result = result \
-        .withColumn("gpa", F.round("gpa", 1)) \
-        .withColumn("std_score", F.round("std_score", 1))
+        .withColumn("gpa", F.round("gpa", 2)) \
+        .withColumn("std_score", F.round("std_score", 2))
         return result.drop("features", "risk_order")
