@@ -16,7 +16,8 @@ class CareerAnalysisTab:
         self.parent = parent_frame
 
         # Dữ liệu
-        self.df_student = None
+        # chỉ sử dụng Spark DataFrame làm nguồn dữ liệu chính
+        self.spark_df = None
         self.df_career_result = None
 
         # Spark (khởi tạo lazy)
@@ -165,11 +166,14 @@ class CareerAnalysisTab:
             return
 
         try:
-            df = load_csv_file(path)
-            self.df_student = df.copy()
-            self.show_table(df)
+            spark = self.get_spark()
+            self.spark_df = load_csv_file(spark, path)
+            # show a sample to user
+            sample = self.spark_df.limit(2000).toPandas()
+            self.show_table(sample)
 
-            messagebox.showinfo("Thành công", f"Đã tải {len(df)} sinh viên")
+            total = self.spark_df.count()
+            messagebox.showinfo("Thành công", f"Đã tải {total} sinh viên")
         except Exception as e:
             messagebox.showerror("Lỗi", str(e))
 
@@ -188,7 +192,7 @@ class CareerAnalysisTab:
             self.tree.insert("", "end", values=list(row))
 
     def analyze_career(self):
-        if self.df_student is None:
+        if self.spark_df is None:
             messagebox.showwarning(
                 "Chưa có dữ liệu",
                 "Vui lòng tải CSV điểm sinh viên trước."
@@ -200,10 +204,8 @@ class CareerAnalysisTab:
         try:
             spark = self.get_spark()
 
-            # pandas → spark
-            spark_df = spark.createDataFrame(self.df_student).cache()
-
-            # Phân tích bằng Spark
+            # dùng trực tiếp spark_df đã đọc
+            spark_df = self.spark_df.cache()
             spark_result = CareerAnalyzer.analyze_students(
                 spark_df,
                 keyword
@@ -216,10 +218,9 @@ class CareerAnalysisTab:
                 )
                 return
 
-            # spark → pandas
-            result_df = spark_result.toPandas()
+            # spark → pandas (chỉ cần mẫu nếu dataset lớn)
+            result_df = spark_result.limit(2000).toPandas()
             self.df_career_result = result_df
-
             # Hiển thị bảng
             self.show_table(result_df)
 

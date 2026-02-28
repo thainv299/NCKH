@@ -1,18 +1,17 @@
 """
 Các hàm tiện ích xử lý dữ liệu
 """
-import pandas as pd
 from pyspark.sql.functions import col, when
 
-def normalize_columns(df):
+def normalize_columns_spark(sdf):
     """
-    Chuẩn hóa tên cột - xóa khoảng trắng
+    Chuẩn hóa tên cột cho Spark DataFrame
     """
-    rename_map = {}
-    for col_name in df.columns:
+    for col_name in sdf.columns:
         new_col = col_name.replace(" ", "").replace("%", "%")
-        rename_map[col_name] = new_col
-    return df.rename(columns=rename_map)
+        if new_col != col_name:
+            sdf = sdf.withColumnRenamed(col_name, new_col)
+    return sdf
 def detect_delimiter(file_path):
     with open(file_path, "r", encoding="utf-8") as f:
         first_line = f.readline()
@@ -22,23 +21,25 @@ def detect_delimiter(file_path):
     else:
         return ","
 
-def load_csv_file(file_path):
+def load_csv_file(spark, file_path):
     """
-    Đọc file CSV với:
+    Đọc CSV bằng Spark:
     - Tự động detect delimiter
-    - Tự động fallback encoding
+    - inferSchema
+    - chuẩn hóa cột
     """
     sep = detect_delimiter(file_path)
 
-    try:
-        df = pd.read_csv(file_path, encoding="utf-8", sep=sep)
-    except:
-        try:
-            df = pd.read_csv(file_path, encoding="latin1", sep=sep)
-        except Exception as e:
-            raise Exception(f"Không thể đọc file: {str(e)}")
+    sdf = (
+        spark.read
+             .option("header", True)
+             .option("inferSchema", True)
+             .option("delimiter", sep)
+             .csv(file_path)
+    )
 
-    return normalize_columns(df)
+    sdf = normalize_columns_spark(sdf)
+    return sdf
 
 def validate_required_columns(df, required_cols):
     """
