@@ -3,6 +3,7 @@ from pyspark.ml.feature import VectorAssembler
 from pyspark.sql import functions as F
 from functools import reduce
 from pyspark.sql.functions import when, col
+from src.utils.data_utils import convert_to_4_scale
 
 class StudentPredictorService:
 
@@ -37,7 +38,7 @@ class StudentPredictorService:
         # GPA
         gpa_expr = reduce(
             lambda x, y: x + y,
-            [col(c) for c in subject_cols]
+            [convert_to_4_scale(c) for c in subject_cols]
         ) / len(subject_cols)
 
         df_features = df_features.withColumn("gpa", gpa_expr)
@@ -65,7 +66,7 @@ class StudentPredictorService:
         # Std deviation
         variance_expr = reduce(
             lambda x, y: x + y,
-            [(col(c) - col("gpa")) ** 2 for c in subject_cols]
+            [(convert_to_4_scale(c) - F.col("gpa"))**2 for c in subject_cols]
         ) / len(subject_cols)
 
         df_features = df_features.withColumn(
@@ -100,8 +101,8 @@ class StudentPredictorService:
         risk_mapping = {
             2: 0,  # Nguy hiểm 
             0: 1,  # Trung bình
-            1: 2,  # Khá
-            3: 3   # Xuất sắc
+            3: 2,  # Khá
+            1: 3   # Xuất sắc
         }
 
         mapping_list = []
@@ -115,5 +116,7 @@ class StudentPredictorService:
         )
 
         result = result.orderBy("risk_order")
-
+        result = result \
+        .withColumn("gpa", F.round("gpa", 1)) \
+        .withColumn("std_score", F.round("std_score", 1))
         return result.drop("features", "risk_order")
