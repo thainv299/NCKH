@@ -1,7 +1,6 @@
 """
 Các hàm tiện ích xử lý dữ liệu
 """
-import pandas as pd
 from pyspark.sql.functions import col, when
 
 def normalize_columns_spark(sdf):
