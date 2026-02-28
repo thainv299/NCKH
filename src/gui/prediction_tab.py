@@ -71,7 +71,8 @@ class StudentPredictionTab:
         # Style tag
         self.tree.tag_configure("danger", background="#f8d7da")
         self.tree.tag_configure("warning", background="#fff3cd")
-        self.tree.tag_configure("good", background="#d4edda")
+        self.tree.tag_configure("good", background="#ffffff")
+        self.tree.tag_configure("excellent", background="#c3e6cb")
 
         for _, row in df.iterrows():
 
@@ -81,9 +82,9 @@ class StudentPredictionTab:
                 tag = "danger"
             elif cluster == 0:
                 tag = "warning"
-            elif cluster == 1:
+            elif cluster == 3:
                 tag = "good"
             else:
-                tag = "good"
+                tag = "excellent"
 
             self.tree.insert("", "end", values=list(row), tags=(tag,))
