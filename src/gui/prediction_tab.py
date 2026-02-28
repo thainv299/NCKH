@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import filedialog, ttk, messagebox
 from pyspark.sql import SparkSession
 from src.utils.data_utils import load_csv_file
-from services.student_predictor import StudentPredictorService
+from src.services.student_predictor import StudentPredictorService
 
 
 class StudentPredictionTab:
