@@ -79,9 +79,9 @@ class StudentPredictionTab:
 
             if cluster == 2:
                 tag = "danger"
-            elif cluster == 1:
-                tag = "warning"
             elif cluster == 0:
+                tag = "warning"
+            elif cluster == 1:
                 tag = "good"
             else:
                 tag = "good"
