@@ -99,8 +99,8 @@ class StudentPredictorService:
         # Mapping mức độ
         risk_mapping = {
             2: 0,  # Nguy hiểm 
-            1: 1,  # Trung bình
-            0: 2,  # Khá
+            0: 1,  # Trung bình
+            1: 2,  # Khá
             3: 3   # Xuất sắc
         }
 
