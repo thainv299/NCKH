@@ -1,8 +1,8 @@
 from pyspark.ml.clustering import KMeansModel
 from pyspark.ml.feature import VectorAssembler
-from pyspark.sql.functions import col
 from pyspark.sql import functions as F
-
+from functools import reduce
+from pyspark.sql.functions import when, col
 
 class StudentPredictorService:
 
@@ -35,34 +35,42 @@ class StudentPredictorService:
         )
 
         # GPA
-        gpa_expr = sum([col(c) for c in subject_cols]) / len(subject_cols)
+        gpa_expr = reduce(
+            lambda x, y: x + y,
+            [col(c) for c in subject_cols]
+        ) / len(subject_cols)
 
         df_features = df_features.withColumn("gpa", gpa_expr)
 
         # Failed subjects (<4)
+        failed_expr = reduce(
+            lambda x, y: x + y,
+            [when(col(c) < 4, 1).otherwise(0) for c in subject_cols]
+        )
         df_features = df_features.withColumn(
             "failed_subjects",
-            sum([
-                when(col(c) < 4, 1).otherwise(0)
-                for c in subject_cols
-            ])
+            failed_expr
         )
 
         # Excellent subjects (>=8)
+        excellent_expr = reduce(
+            lambda x, y: x + y,
+            [when(col(c) >= 8, 1).otherwise(0) for c in subject_cols]
+        )
         df_features = df_features.withColumn(
             "excellent_subjects",
-            sum([
-                when(col(c) >= 8, 1).otherwise(0)
-                for c in subject_cols
-            ])
+            excellent_expr
         )
 
         # Std deviation
+        variance_expr = reduce(
+            lambda x, y: x + y,
+            [(col(c) - col("gpa")) ** 2 for c in subject_cols]
+        ) / len(subject_cols)
+
         df_features = df_features.withColumn(
             "std_score",
-            F.sqrt(
-                sum([(col(c) - col("gpa"))**2 for c in subject_cols]) / len(subject_cols)
-            )
+            F.sqrt(variance_expr)
         )
 
         df_final = df_features.select(
@@ -96,9 +104,10 @@ class StudentPredictorService:
             3: 3   # Xuất sắc
         }
 
-        map_expr = F.create_map(
-            [F.lit(x) for x in sum(risk_mapping.items(), ())]
-        )
+        mapping_list = []
+        for k, v in risk_mapping.items():
+            mapping_list.extend([F.lit(k), F.lit(v)])
+        map_expr = F.create_map(mapping_list)
 
         result = result.withColumn(
             "risk_order",
