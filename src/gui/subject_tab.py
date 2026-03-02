@@ -27,8 +27,8 @@ class SubjectAnalysisTab:
         self.paned_window = tk.PanedWindow(self.parent, orient=tk.HORIZONTAL)
         self.paned_window.pack(fill="both", expand=True)
         
-        self.left_frame = tk.Frame(self.paned_window, bg="#f0f0f0", width=280)
-        self.right_frame = tk.Frame(self.paned_window, bg="white")
+        self.left_frame = tk.Frame(self.paned_window, bg="#f1f5f9", width=280)
+        self.right_frame = tk.Frame(self.paned_window, bg="#f1f5f9")
         
         self.paned_window.add(self.left_frame, minsize=250, width=280)
         self.paned_window.add(self.right_frame)
@@ -39,13 +39,13 @@ class SubjectAnalysisTab:
     def create_left_panel(self):
         """Tạo panel điều khiển bên trái"""
         # Container cho nội dung có thể scroll
-        content_frame = tk.Frame(self.left_frame, bg="#f0f0f0")
+        content_frame = tk.Frame(self.left_frame, bg="#f1f5f9")
         content_frame.pack(fill="both", expand=True)
         
         # Canvas và Scrollbar
-        canvas = tk.Canvas(content_frame, bg="#f0f0f0", highlightthickness=0)
+        canvas = tk.Canvas(content_frame, bg="#f1f5f9", highlightthickness=0)
         scrollbar = tk.Scrollbar(content_frame, orient="vertical", command=canvas.yview)
-        scrollable_frame = tk.Frame(canvas, bg="#f0f0f0")
+        scrollable_frame = tk.Frame(canvas, bg="#f1f5f9")
         
         scrollable_frame.bind(
             "<Configure>",
@@ -67,16 +67,17 @@ class SubjectAnalysisTab:
         tk.Label(
             scrollable_frame, 
             text="ĐIỀU KHIỂN", 
-            bg="#2c3e50", fg="white", 
-            font=("Arial", 12, "bold"), pady=10
+            bg="#1e293b", fg="white", 
+            font=("Segoe UI", 12, "bold"), pady=10
         ).pack(fill="x")
         
         # 1. Load File
         frame_file = tk.LabelFrame(
             scrollable_frame, 
             text="1. Dữ liệu nguồn", 
-            font=("Arial", 10, "bold"), 
-            bg="#f0f0f0",
+            font=("Segoe UI", 10, "bold"), 
+            bg="#f1f5f9",
+            fg="#475569",
             padx=3,
             pady=3
         )
@@ -86,15 +87,19 @@ class SubjectAnalysisTab:
             frame_file, 
             text="Tải CSV", 
             command=self.load_csv, 
-            bg="#3498db", 
-            fg="white"
+            bg="#3b82f6", 
+            fg="white",
+            font=("Segoe UI", 9, "bold"),
+            relief="flat",
+            cursor="hand2"
         ).pack(fill="x", padx=5, pady=3)
         
         self.lbl_file_status = tk.Label(
             frame_file, 
             text="Chưa có dữ liệu", 
-            fg="gray", 
-            bg="#f0f0f0"
+            fg="#94a3b8", 
+            bg="#f1f5f9",
+            font=("Segoe UI", 9)
         )
         self.lbl_file_status.pack(pady=2)
         
@@ -102,8 +107,9 @@ class SubjectAnalysisTab:
         frame_search = tk.LabelFrame(
             scrollable_frame, 
             text="2. Chọn học phần", 
-            font=("Arial", 10, "bold"), 
-            bg="#f0f0f0",
+            font=("Segoe UI", 10, "bold"), 
+            bg="#f1f5f9",
+            fg="#475569",
             padx=3,
             pady=3
         )
@@ -112,7 +118,9 @@ class SubjectAnalysisTab:
         tk.Label(
             frame_search, 
             text="Tìm kiếm (Tên/Mã):", 
-            bg="#f0f0f0"
+            bg="#f1f5f9",
+            fg="#475569",
+            font=("Segoe UI", 9)
         ).pack(anchor="w", padx=5, pady=(3, 0))
         
         self.entry_search = tk.Entry(frame_search)
@@ -123,8 +131,11 @@ class SubjectAnalysisTab:
             frame_search, 
             text="Tìm", 
             command=self.search_subject, 
-            bg="#95a5a6", 
-            fg="white"
+            bg="#64748b", 
+            fg="white",
+            font=("Segoe UI", 9),
+            relief="flat",
+            cursor="hand2"
         ).pack(pady=3)
         
         self.combo_suggestions = ttk.Combobox(frame_search, state="readonly")
@@ -134,16 +145,19 @@ class SubjectAnalysisTab:
             frame_search, 
             text="⬇ Thêm vào danh sách phân tích", 
             command=self.add_subject_to_list,
-            bg="#27ae60", 
+            bg="#10b981", 
             fg="white", 
-            font=("Arial", 9, "bold")
+            font=("Segoe UI", 9, "bold"),
+            relief="flat",
+            cursor="hand2"
         ).pack(fill="x", padx=5, pady=3)
         
         tk.Label(
             frame_search, 
             text="Danh sách các môn sẽ phân tích:", 
-            bg="#f0f0f0", 
-            font=("Arial", 9, "italic")
+            bg="#f1f5f9", 
+            fg="#475569",
+            font=("Segoe UI", 9, "italic")
         ).pack(anchor="w", padx=5, pady=(3, 0))
         
         list_frame = tk.Frame(frame_search)
@@ -164,16 +178,20 @@ class SubjectAnalysisTab:
             frame_search, 
             text="Xóa danh sách chọn", 
             command=self.clear_selection, 
-            bg="#e74c3c", 
-            fg="white"
+            bg="#ef4444", 
+            fg="white",
+            font=("Segoe UI", 9),
+            relief="flat",
+            cursor="hand2"
         ).pack(pady=3)
         
         # 3. Tùy chọn Phân tích
         frame_opt = tk.LabelFrame(
             scrollable_frame, 
             text="3. Cấu hình báo cáo", 
-            font=("Arial", 10, "bold"), 
-            bg="#f0f0f0",
+            font=("Segoe UI", 10, "bold"), 
+            bg="#f1f5f9",
+            fg="#475569",
             padx=3,
             pady=3
         )
@@ -187,19 +205,28 @@ class SubjectAnalysisTab:
             frame_opt, 
             text="Độ khó học phần", 
             variable=self.ck_dokho, 
-            bg="#f0f0f0"
+            bg="#f1f5f9",
+            fg="#1e293b",
+            font=("Segoe UI", 9),
+            activebackground="#f1f5f9"
         ).pack(anchor="w", pady=1)
         tk.Checkbutton(
             frame_opt, 
             text="Chất lượng giảng dạy", 
             variable=self.ck_chatluong, 
-            bg="#f0f0f0"
+            bg="#f1f5f9",
+            fg="#1e293b",
+            font=("Segoe UI", 9),
+            activebackground="#f1f5f9"
         ).pack(anchor="w", pady=1)
         tk.Checkbutton(
             frame_opt, 
             text="Xu hướng học tập", 
             variable=self.ck_xuhuong, 
-            bg="#f0f0f0"
+            bg="#f1f5f9",
+            fg="#1e293b",
+            font=("Segoe UI", 9),
+            activebackground="#f1f5f9"
         ).pack(anchor="w", pady=1)
         
         # 4. Nút Chạy Phân Tích - ĐẶT TRONG SCROLLABLE FRAME
@@ -207,9 +234,11 @@ class SubjectAnalysisTab:
             scrollable_frame,
             text="TẠO BÁO CÁO PHÂN TÍCH",
             command=self.generate_report,
-            bg="#8e44ad", 
+            bg="#8b5cf6", 
             fg="white",
-            font=("Arial", 11, "bold"),
+            font=("Segoe UI", 11, "bold"),
+            relief="flat",
+            cursor="hand2",
             pady=10
         ).pack(fill="x", padx=5, pady=8)
     
@@ -219,16 +248,18 @@ class SubjectAnalysisTab:
         self.notebook.pack(fill="both", expand=True)
         
         # TAB 1: Dữ liệu
-        self.tab_data = tk.Frame(self.notebook, bg="white")
+        self.tab_data = tk.Frame(self.notebook, bg="#f1f5f9")
         self.notebook.add(self.tab_data, text=" Dữ liệu Học phần ")
         
-        search_df_frame = tk.Frame(self.tab_data, bg="#ecf0f1", height=40)
+        search_df_frame = tk.Frame(self.tab_data, bg="#e2e8f0", height=40)
         search_df_frame.pack(fill="x")
         
         tk.Label(
             search_df_frame, 
             text="Tìm kiếm trong bảng dữ liệu:", 
-            bg="#ecf0f1"
+            bg="#e2e8f0",
+            fg="#475569",
+            font=("Segoe UI", 9)
         ).pack(side=tk.LEFT, padx=10, pady=5)
         
         self.entry_filter_df = tk.Entry(search_df_frame, width=40)
@@ -256,78 +287,139 @@ class SubjectAnalysisTab:
         self.tree.pack(side=tk.LEFT, fill="both", expand=True)
         
         # TAB 2: Báo cáo
-        self.tab_report = tk.Frame(self.notebook, bg="white")
+        self.tab_report = tk.Frame(self.notebook, bg="#f1f5f9")
         self.notebook.add(self.tab_report, text="Báo cáo Phân tích ")
 
         # === Layout chia trái / phải ===
-        report_paned = tk.PanedWindow(
-            self.tab_report,
-            orient=tk.HORIZONTAL
-        )
+        report_paned = tk.PanedWindow(self.tab_report, orient=tk.HORIZONTAL)
         report_paned.pack(fill="both", expand=True)
 
         # --- Danh sách môn (bên trái) ---
-        left_report = tk.Frame(report_paned, width=250, bg="#f7f7f7")
+        left_report = tk.Frame(report_paned, width=260, bg="#f1f5f9")
         report_paned.add(left_report, minsize=220)
 
+        # Header danh sách
         tk.Label(
-            left_report,
-            text="DANH SÁCH HỌC PHẦN",
-            bg="#34495e",
-            fg="white",
-            font=("Arial", 11, "bold"),
-            pady=8
+            left_report, text="DANH SÁCH HỌC PHẦN",
+            bg="#1e293b", fg="white",
+            font=("Segoe UI", 11, "bold"), pady=8
         ).pack(fill="x")
-          # Ô tìm kiếm môn học
-        self.entry_search_subject = tk.Entry(left_report)
-        self.entry_search_subject.pack(
-            fill="x",
-            padx=5,
-            pady=(5, 3)
-        )
 
-        self.entry_search_subject.bind(
-            "<KeyRelease>",
-            self.filter_subject_list
+        # Legend màu
+        legend_f = tk.Frame(left_report, bg="#e2e8f0", pady=4)
+        legend_f.pack(fill="x")
+        for color, label in [
+            ("#fd7e7e", "Tiêu cực"),
+            ("#fcd143", "Không ổn định"),
+            ("#c4b5fd", "Bình thường"),
+            ("#5eecb3", "Tích cực"),
+        ]:
+            row_f = tk.Frame(legend_f, bg="#e2e8f0")
+            row_f.pack(side="left", padx=6)
+            tk.Label(row_f, text="●", font=("Segoe UI", 12),
+                     bg="#e2e8f0", fg=color).pack(side="left")
+            tk.Label(row_f, text=label, font=("Segoe UI", 8),
+                     bg="#e2e8f0", fg="#475569").pack(side="left")
+
+        # Ô tìm kiếm
+        self.entry_search_subject = tk.Entry(
+            left_report, font=("Segoe UI", 9),
+            relief="flat", bg="#e2e8f0", fg="#1e293b"
         )
+        self.entry_search_subject.pack(fill="x", padx=6, pady=(6, 3), ipady=4)
+        self.entry_search_subject.bind("<KeyRelease>", self.filter_subject_list)
+
+        # Listbox môn
+        lb_frame = tk.Frame(left_report, bg="#f1f5f9")
+        lb_frame.pack(fill="both", expand=True, padx=5, pady=(0, 5))
+        lb_vsb = ttk.Scrollbar(lb_frame, orient="vertical")
         self.listbox_subjects = tk.Listbox(
-            left_report,
-            font=("Consolas", 10),
-            activestyle='none' # Bỏ gạch chân khi chọn 
+            lb_frame,
+            font=("Segoe UI", 9),
+            bg="#f1f5f9", fg="#1e293b",
+            selectbackground="#3b82f6", selectforeground="#ffffff",
+            activestyle="none",
+            yscrollcommand=lb_vsb.set,
+            borderwidth=0, highlightthickness=0
         )
-        self.listbox_subjects.pack(
-            fill="both",
-            expand=True,
-            padx=5,
-            pady=5
-        )
+        lb_vsb.config(command=self.listbox_subjects.yview)
+        lb_vsb.pack(side="right", fill="y")
+        self.listbox_subjects.pack(side="left", fill="both", expand=True)
+        self.listbox_subjects.bind("<<ListboxSelect>>", self.on_subject_click)
 
-        self.listbox_subjects.bind(
-            "<<ListboxSelect>>",
-            self.on_subject_click
-        )
-
-        # --- Nội dung báo cáo (bên phải) ---
-        right_report = tk.Frame(report_paned, bg="white")
+        # --- Nội dung báo cáo (bên phải) - Canvas scroll giống popup ---
+        right_report = tk.Frame(report_paned, bg="#f1f5f9")
         report_paned.add(right_report)
 
-        self.txt_report = tk.Text(
-            right_report,
-            font=("Consolas", 11),
-            padx=20,
-            pady=20
+        # Header placeholder (sẽ update khi chọn môn)
+        self.report_header_frame = tk.Frame(right_report, bg="#64748b", padx=20, pady=14)
+        self.report_header_frame.pack(fill="x")
+
+        self._report_header_icon = tk.Label(
+            self.report_header_frame, text="📋",
+            font=("Segoe UI Emoji", 28),
+            bg="#64748b", fg="#ffffff"
+        )
+        self._report_header_icon.pack(side="left", padx=(0, 12))
+
+        hdr_text_f = tk.Frame(self.report_header_frame, bg="#64748b")
+        hdr_text_f.pack(side="left")
+        self._report_header_title = tk.Label(
+            hdr_text_f, text="Chọn học phần để xem phân tích",
+            font=("Segoe UI", 13, "bold"),
+            bg="#64748b", fg="#ffffff"
+        )
+        self._report_header_title.pack(anchor="w")
+        self._report_header_sub = tk.Label(
+            hdr_text_f, text="Nhấn vào môn học bên trái",
+            font=("Segoe UI", 9),
+            bg="#64748b", fg="#e2e8f0"
+        )
+        self._report_header_sub.pack(anchor="w")
+
+        # Badge bên phải header
+        self._report_badge_frame = tk.Frame(self.report_header_frame, bg="#64748b")
+        self._report_badge_frame.pack(side="right")
+        self._report_badge_label = tk.Label(
+            self._report_badge_frame, text="",
+            font=("Segoe UI", 10, "bold"),
+            bg="#64748b", fg="#ffffff"
+        )
+        self._report_badge_label.pack(anchor="e")
+        self._report_badge_tb = tk.Label(
+            self._report_badge_frame, text="",
+            font=("Segoe UI", 9),
+            bg="#64748b", fg="#e2e8f0"
+        )
+        self._report_badge_tb.pack(anchor="e")
+
+        # Canvas scroll body
+        canvas_outer = tk.Frame(right_report, bg="#f1f5f9")
+        canvas_outer.pack(fill="both", expand=True)
+
+        self._report_canvas = tk.Canvas(canvas_outer, bg="#f1f5f9", highlightthickness=0)
+        _vsb = ttk.Scrollbar(canvas_outer, orient="vertical", command=self._report_canvas.yview)
+        self._report_canvas.configure(yscrollcommand=_vsb.set)
+        _vsb.pack(side="right", fill="y")
+        self._report_canvas.pack(side="left", fill="both", expand=True)
+
+        self._report_body = tk.Frame(self._report_canvas, bg="#f1f5f9")
+        self._report_body_win = self._report_canvas.create_window(
+            (0, 0), window=self._report_body, anchor="nw"
         )
 
-        scroll_report = ttk.Scrollbar(
-            right_report,
-            command=self.txt_report.yview
+        def _resize_body(e):
+            self._report_canvas.configure(scrollregion=self._report_canvas.bbox("all"))
+            self._report_canvas.itemconfig(self._report_body_win, width=self._report_canvas.winfo_width())
+        self._report_body.bind("<Configure>", _resize_body)
+        self._report_canvas.bind(
+            "<Configure>",
+            lambda e: self._report_canvas.itemconfig(self._report_body_win, width=e.width)
         )
-        self.txt_report.config(
-            yscrollcommand=scroll_report.set
+        self._report_canvas.bind_all(
+            "<MouseWheel>",
+            lambda e: self._report_canvas.yview_scroll(int(-1*(e.delta/120)), "units")
         )
-
-        scroll_report.pack(side=tk.RIGHT, fill="y")
-        self.txt_report.pack(side=tk.LEFT, fill="both", expand=True)
     
     # ================= LOGIC XỬ LÝ =================
     
@@ -352,7 +444,7 @@ class SubjectAnalysisTab:
             total = self.spark_df.count()
             self.lbl_file_status.config(
                 text=f"✓ {os.path.basename(path)} ({total} dòng)", 
-                fg="green"
+                fg="#10b981"
             )
             messagebox.showinfo("Thành công", "Tải dữ liệu thành công!")
         except Exception as e:
@@ -474,137 +566,237 @@ class SubjectAnalysisTab:
             df = self.spark_df.limit(2000).toPandas()
             self.show_table(df)
 
-    def get_subject_color(self, ma_mh):
-        """
-        Xác định màu sắc dựa trên kết quả phân tích.
-        Sửa lỗi: Truy cập dữ liệu bằng [] thay vì .get() để tương thích với Spark Row.
-        """
-        # Lấy dữ liệu row
+    # ── Helpers render report (popup-style) ─────────────────────────────────
+
+    def _get_group_info(self, ma_mh):
+        """Trả về (priority 0=xấu..3=tốt, badge_bg, badge_fg, icon, label)."""
         result = self.analysis_results.get(ma_mh)
-        
-        # Nếu không tìm thấy dữ liệu -> màu trắng
         if not result:
-            return "white" 
-        
+            return (2, "#c4b5fd", "#1e1b4b", "📋", "Bình thường")
+        xu = str(result.get("XuHuong") or "").strip().lower()
+        cl = str(result.get("ChatLuong") or "").strip().lower()
+        if "tiêu cực" in xu:
+            return (0, "#ef4444", "#ffffff", "⚡", "Tiêu cực – Cần lưu ý")
+        if "không ổn định" in cl or "cần cải thiện" in cl:
+            return (1, "#f59e0b", "#1c1917", "⚠️", "Không ổn định")
+        if "tích cực" in xu:
+            return (3, "#10b981", "#ffffff", "✅", "Tích cực – Kết quả tốt")
+        return (2, "#8b5cf6", "#ffffff", "📘", "Bình thường – Ổn định")
+
+    def get_subject_color(self, ma_mh):
+        p, bg, fg, icon, label = self._get_group_info(ma_mh)
+        mapping = {0: "#fd7e7e", 1: "#fcd143", 2: "#c4b5fd", 3: "#5eecb3"}
+        return mapping.get(p, "#f1f5f9")
+
+    def _sec_title_card(self, parent, text):
+        tk.Label(
+            parent, text=text,
+            font=("Segoe UI", 10, "bold"),
+            bg="#f1f5f9", fg="#94a3b8", anchor="w"
+        ).pack(fill="x", padx=16, pady=(12, 4))
+
+    def _info_row(self, parent, label, value, accent_color):
+        row = tk.Frame(parent, bg="#e2e8f0")
+        row.pack(fill="x", pady=2)
+        tk.Label(row, text="▸", font=("Segoe UI", 11, "bold"),
+                 bg="#e2e8f0", fg=accent_color
+                 ).pack(side="left", padx=(0, 6))
+        tk.Label(row, text=label, font=("Segoe UI", 10, "bold"),
+                 bg="#e2e8f0", fg="#475569", width=16, anchor="w"
+                 ).pack(side="left")
+        tk.Label(row, text=str(value), font=("Segoe UI", 10),
+                 bg="#e2e8f0", fg="#1e293b", anchor="w"
+                 ).pack(side="left", fill="x", expand=True)
+
+    def _render_report_body(self, ma_mh):
+        """Vẽ lại nội dung card trong canvas body giống popup."""
+        # Xóa body cũ
+        for w in self._report_body.winfo_children():
+            w.destroy()
+        self._report_canvas.yview_moveto(0)
+
+        row = self.analysis_results.get(ma_mh)
+        if not row:
+            return
+
+        priority, badge_bg, badge_fg, icon, group_label = self._get_group_info(ma_mh)
+        ten_mh = str(row.get("TenMH") or ma_mh)
+        tb     = row.get("TB", "-")
+        fp     = row.get("F%", "-")
+        dokho  = str(row.get("DoKho") or "-")
+        chat   = str(row.get("ChatLuong") or "-")
+        xu     = str(row.get("XuHuong") or "-")
+
+        # Update header
+        self.report_header_frame.config(bg=badge_bg)
+        self._report_header_icon.config(bg=badge_bg, fg=badge_fg, text=icon)
+        for w in self.report_header_frame.winfo_children():
+            if isinstance(w, tk.Frame):
+                w.config(bg=badge_bg)
+                for c in w.winfo_children():
+                    if isinstance(c, tk.Label):
+                        c.config(bg=badge_bg)
+        self._report_header_title.config(text=ten_mh, bg=badge_bg, fg=badge_fg)
+        self._report_header_sub.config(text=f"Mã môn: {ma_mh}", bg=badge_bg, fg=badge_fg)
+        self._report_badge_label.config(text=group_label, bg=badge_bg, fg=badge_fg)
+        self._report_badge_frame.config(bg=badge_bg)
+        self._report_badge_tb.config(
+            text=f"TB: {tb}  |  Rớt: {fp}%",
+            bg=badge_bg, fg=badge_fg
+        )
+
+        P = {"padx": 16, "pady": (0, 8)}
+
+        # ── 1. Chỉ số học tập ────────────────────────────────────────────────
+        self._sec_title_card(self._report_body, "📊  Chỉ Số Học Tập")
+        cards_f = tk.Frame(self._report_body, bg="#f1f5f9")
+        cards_f.pack(fill="x", **P)
+
+        # Màu theo giá trị
         try:
-            # Dùng ngoặc vuông [] để lấy giá trị.
-            # Dùng str() để đảm bảo không lỗi nếu dữ liệu là None.
-            # Dùng lower() để so sánh không phân biệt hoa thường.
-            
-            xu_huong = str(result['XuHuong']).strip().lower()
-            chat_luong = str(result['ChatLuong']).strip().lower()
-            
-            # --- LOGIC TÔ MÀU THEO THỨ TỰ ƯU TIÊN ---
-            
-            # 1. TIÊU CỰC -> Màu ĐỎ (Cảnh báo cao nhất)
-            if "tiêu cực" in xu_huong:
-                return "#f8d7da" # Đỏ nhạt
-            
-            # 2. KHÔNG ỔN ĐỊNH / CẦN CẢI THIỆN -> Màu VÀNG (Cảnh báo trung bình)
-            # Kiểm tra xem trong chuỗi chất lượng có từ khóa cảnh báo không
-            if "không ổn định" in chat_luong or "cần cải thiện" in chat_luong:
-                return "#fff3cd" # Vàng nhạt
-            
-            # 3. TÍCH CỰC -> Màu XANH LÁ (Trạng thái tốt)
-            if "tích cực" in xu_huong:
-                return "#d4edda" # Xanh nhạt
-            
-            # 4. Các trường hợp còn lại (Bình thường, Ổn định...) -> Màu TRẮNG
-            return "white"
-                
-        except Exception as e:
-            print(f"Lỗi tô màu môn {ma_mh}: {e}")
-            return "white"
-    
+            tb_v = float(tb)
+            tb_color = "#10b981" if tb_v >= 7.5 else ("#f59e0b" if tb_v >= 6.0 else "#ef4444")
+            tb_pct = tb_v / 10.0
+        except Exception:
+            tb_color, tb_pct = "#64748b", 0.0
+
+        try:
+            fp_v = float(fp)
+            fp_color = "#10b981" if fp_v == 0 else ("#f59e0b" if fp_v <= 15 else "#ef4444")
+            fp_pct = max(0.0, 1.0 - fp_v / 50.0)
+        except Exception:
+            fp_color, fp_pct = "#64748b", 0.0
+
+        for title, val, subtitle, color, pct in [
+            ("Điểm TB",    f"{tb}",  dokho,   tb_color, tb_pct),
+            ("Tỷ lệ rớt",  f"{fp}%", chat,    fp_color, fp_pct),
+        ]:
+            card = tk.Frame(cards_f, bg="#e2e8f0", padx=10, pady=10)
+            card.pack(side="left", expand=True, fill="x", padx=4)
+            tk.Label(card, text=title, font=("Segoe UI", 8, "bold"),
+                     bg="#e2e8f0", fg="#64748b").pack(anchor="w")
+            tk.Label(card, text=val, font=("Segoe UI", 20, "bold"),
+                     bg="#e2e8f0", fg=color).pack(anchor="w")
+            tk.Label(card, text=subtitle, font=("Segoe UI", 8),
+                     bg="#e2e8f0", fg=color).pack(anchor="w")
+            bar_bg = tk.Frame(card, bg="#374151", height=5)
+            bar_bg.pack(fill="x", pady=(6, 2))
+            bar_bg.pack_propagate(False)
+            pct = max(0.0, min(1.0, pct))
+            if pct > 0:
+                tk.Frame(bar_bg, bg=color, height=5).place(
+                    relx=0, rely=0, relwidth=pct, relheight=1
+                )
+
+        # ── 2. Đánh giá độ khó ──────────────────────────────────────────────
+        self._sec_title_card(self._report_body, "🔍  Đánh Giá Độ Khó")
+        sec2 = tk.Frame(self._report_body, bg="#e2e8f0", padx=14, pady=12)
+        sec2.pack(fill="x", padx=16, pady=(0, 8))
+        self._info_row(sec2, "Mức độ:", dokho, badge_bg)
+        self._info_row(sec2, "Điểm trung bình:", tb, badge_bg)
+        self._info_row(sec2, "Tỷ lệ rớt:", f"{fp}%", badge_bg)
+
+        # ── 3. Chất lượng giảng dạy ─────────────────────────────────────────
+        self._sec_title_card(self._report_body, "📋  Chất Lượng Giảng Dạy")
+        sec3 = tk.Frame(self._report_body, bg="#e2e8f0", padx=14, pady=12)
+        sec3.pack(fill="x", padx=16, pady=(0, 8))
+        self._info_row(sec3, "Đánh giá:", chat, badge_bg)
+
+        # ── 4. Xu hướng học tập ─────────────────────────────────────────────
+        self._sec_title_card(self._report_body, "📈  Xu Hướng Học Tập")
+        sec4 = tk.Frame(self._report_body, bg="#e2e8f0", padx=14, pady=12)
+        sec4.pack(fill="x", padx=16, pady=(0, 16))
+        self._info_row(sec4, "Nhận định:", xu, badge_bg)
+
     def generate_report(self):
-        """Tạo báo cáo phân tích (Tổng quan + Click môn)"""
-        # 1. Kiểm tra dữ liệu
+        """Tạo báo cáo phân tích – sort+group theo mức độ cảnh báo"""
         if self.spark_df is None:
-            messagebox.showwarning(
-                "Cảnh báo",
-                "Chưa có dữ liệu nguồn!"
-            )
+            messagebox.showwarning("Cảnh báo", "Chưa có dữ liệu nguồn!")
             return
 
         try:
-            # 2. Phân tích TOÀN BỘ môn
-            result_sdf = SubjectAnalyzer.analyze_all_subjects(
-                self.spark_df
-            )
+            result_sdf = SubjectAnalyzer.analyze_all_subjects(self.spark_df)
             results = result_sdf.collect()
 
             if not results:
-                messagebox.showwarning(
-                    "Cảnh báo",
-                    "Không có dữ liệu học phần để phân tích!"
-                )
+                messagebox.showwarning("Cảnh báo", "Không có dữ liệu học phần để phân tích!")
                 return
 
-            # 3. Lưu kết quả phân tích để click dùng lại
-            self.analysis_results = {
-                row["MaMH"]: row for row in results
-            }
+            # Lưu kết quả - convert sang dict để tránh lỗi trên Spark Row
+            self.analysis_results = {row["MaMH"]: row.asDict() for row in results}
 
-            # 4. Chuyển sang tab báo cáo
+            # Convert results sang list dict luôn
+            results = [self.analysis_results[k] for k in self.analysis_results]
+
+            # Chuyển sang tab báo cáo
             self.notebook.select(self.tab_report)
 
-            # 5. Xóa nội dung cũ
-            self.txt_report.delete(1.0, tk.END)
+            # Xóa body report
+            for w in self._report_body.winfo_children():
+                w.destroy()
 
-            # 6. HIỂN THỊ BÁO CÁO TỔNG QUAN
-            self.txt_report.insert(
-                tk.END,
-                "BÁO CÁO TỔNG QUAN CÁC HỌC PHẦN\n",
-                "header"
+            # Reset header về trạng thái mặc định
+            self.report_header_frame.config(bg="#64748b")
+            self._report_header_icon.config(bg="#64748b", fg="#ffffff", text="📋")
+            self._report_header_title.config(
+                text="Chọn học phần để xem phân tích",
+                bg="#64748b", fg="#ffffff"
             )
-            self.txt_report.insert(
-                tk.END,
-                "=" * 50 + "\n\n",
-                "divider"
+            self._report_header_sub.config(
+                text=f"Tổng: {len(results)} học phần – Nhấn vào môn bên trái",
+                bg="#64748b", fg="#e2e8f0"
             )
+            self._report_badge_label.config(text="", bg="#64748b")
+            self._report_badge_frame.config(bg="#64748b")
+            self._report_badge_tb.config(text="", bg="#64748b")
 
-            self.txt_report.insert(
-                tk.END,
-                f"Tổng số học phần được phân tích: {len(results)}\n\n",
-                "content"
-            )
+            # Sort theo priority: 0(đỏ) → 1(vàng) → 2(tím) → 3(xanh)
+            def _sort_key(row):
+                p, *_ = self._get_group_info(row["MaMH"])
+                return (p, str(row.get("TenMH") or ""))
 
-            self.txt_report.insert(
-                tk.END,
-                "Chọn một học phần bên trái để xem phân tích chi tiết.\n",
-                "content"
-            )
-            self.txt_report.insert(
-                tk.END,
-                "(Màu xanh: Kết quả tốt | Màu đỏ: Cần lưu ý)\n",
-                "content"
-            )
+            sorted_results = sorted(results, key=_sort_key)
 
-            # 7. Đổ danh sách môn vào Listbox và tô màu
-            self.all_subjects_list = [
-                f"{row['MaMH']} - {row['TenMH']}"
-                for row in results
-            ]
+            # Group headers
+            GROUP_LABELS = {
+                0: ("🔴  Tiêu Cực – Cần Lưu Ý",    "#ef4444", "#ffffff"),
+                1: ("🟡  Không Ổn Định",              "#f59e0b", "#1c1917"),
+                2: ("🟣  Bình Thường – Ổn Định",      "#8b5cf6", "#ffffff"),
+                3: ("🟢  Tích Cực – Kết Quả Tốt",     "#10b981", "#ffffff"),
+            }
+            current_group = None
+
+            self.all_subjects_list = []
             self.listbox_subjects.delete(0, tk.END)
-            
-            for index, item in enumerate(self.all_subjects_list):
-                self.listbox_subjects.insert(tk.END, item)
-                
-                # Lấy mã môn để tra cứu trạng thái và tô màu
-                ma_mh = item.split(" - ")[0].strip()
-                color = self.get_subject_color(ma_mh)
-                self.listbox_subjects.itemconfigure(index, bg=color)
 
-            messagebox.showinfo(
-                "Hoàn tất",
-                "Đã tạo báo cáo tổng quan. Chọn môn để xem chi tiết!"
-            )
+            for row in sorted_results:
+                ma_mh = row["MaMH"]
+                p, *_ = self._get_group_info(ma_mh)
+
+                # Vẽ group header nếu sang nhóm mới
+                if p != current_group:
+                    current_group = p
+                    glabel, gbg, gfg = GROUP_LABELS[p]
+                    self.listbox_subjects.insert(tk.END, f"  {glabel}")
+                    idx = self.listbox_subjects.size() - 1
+                    self.listbox_subjects.itemconfigure(
+                        idx, bg=gbg, fg=gfg,
+                        selectbackground=gbg, selectforeground=gfg
+                    )
+                    self.all_subjects_list.append(None)
+
+                ten_mh = str(row.get("TenMH") or "")
+                item_text = f"  {ma_mh} – {ten_mh}"
+                color = self.get_subject_color(ma_mh)
+                self.listbox_subjects.insert(tk.END, item_text)
+                idx = self.listbox_subjects.size() - 1
+                self.listbox_subjects.itemconfigure(idx, bg=color, fg="#1e293b")
+                self.all_subjects_list.append(ma_mh)
+
+            messagebox.showinfo("Hoàn tất", "Đã tạo báo cáo. Chọn môn để xem chi tiết!")
 
         except Exception as e:
-            messagebox.showerror(
-                "Lỗi phân tích",
-                str(e)
-            )
+            messagebox.showerror("Lỗi phân tích", str(e))
 
     def on_subject_click(self, event):
         if not self.analysis_results:
@@ -614,66 +806,63 @@ class SubjectAnalysisTab:
         if not selection:
             return
 
-        text = self.listbox_subjects.get(selection[0])
-        ma_mh = text.split(" - ")[0].strip()
-
-        row = self.analysis_results.get(ma_mh)
-        if not row:
+        idx = selection[0]
+        # Bỏ qua nếu click vào group header (all_subjects_list[idx] == None)
+        if idx >= len(self.all_subjects_list) or self.all_subjects_list[idx] is None:
             return
 
-        # Xóa nội dung cũ
-        self.txt_report.delete(1.0, tk.END)
+        ma_mh = self.all_subjects_list[idx]
+        if not ma_mh or ma_mh not in self.analysis_results:
+            return
 
-        # Tiêu đề
-        self.txt_report.insert(
-            tk.END,
-            f"PHÂN TÍCH CHI TIẾT HỌC PHẦN\n{row['TenMH']} ({ma_mh})\n",
-            "header"
-        )
-        self.txt_report.insert(
-            tk.END,
-            "=" * 50 + "\n\n",
-            "divider"
-        )
-
-        # Nội dung
-        self.txt_report.insert(
-            tk.END,
-            f"1. Độ khó học phần:\n"
-            f"- Mức độ: {row['DoKho']}\n"
-            f"- Điểm trung bình: {row['TB']}\n"
-            f"- Tỷ lệ rớt: {row['F%']}%\n\n",
-            "content"
-        )
-
-        self.txt_report.insert(
-            tk.END,
-            f"2. Chất lượng giảng dạy:\n"
-            f"- Đánh giá: {row['ChatLuong']}\n\n",
-            "content"
-        )
-
-        self.txt_report.insert(
-            tk.END,
-            f"3. Xu hướng học tập:\n"
-            f"- Nhận định: {row['XuHuong']}\n",
-            "content"
-        )
+        self._render_report_body(ma_mh)
 
     def filter_subject_list(self, event=None):
-        if not self.all_subjects_list:
+        if not self.analysis_results:
             return
 
         keyword = self.entry_search_subject.get().strip().lower()
         self.listbox_subjects.delete(0, tk.END)
 
-        for item in self.all_subjects_list:
-            if keyword in item.lower():
-                self.listbox_subjects.insert(tk.END, item)
-                
-                # Tô màu lại cho các item sau khi lọc
-                # Lấy index của item vừa chèn (là item cuối cùng)
-                current_idx = self.listbox_subjects.size() - 1
-                ma_mh = item.split(" - ")[0].strip()
-                color = self.get_subject_color(ma_mh)
-                self.listbox_subjects.itemconfigure(current_idx, bg=color)
+        # Khi filter: hiển thị phẳng không có group header
+        GROUP_LABELS = {
+            0: ("🔴  Tiêu Cực – Cần Lưu Ý",    "#ef4444", "#ffffff"),
+            1: ("🟡  Không Ổn Định",              "#f59e0b", "#1c1917"),
+            2: ("🟣  Bình Thường – Ổn Định",      "#8b5cf6", "#ffffff"),
+            3: ("🟢  Tích Cực – Kết Quả Tốt",     "#10b981", "#ffffff"),
+        }
+
+        # Rebuild từ analysis_results đã sort
+        def _sort_key(ma):
+            p, *_ = self._get_group_info(ma)
+            return (p, ma)
+
+        sorted_codes = sorted(self.analysis_results.keys(), key=_sort_key)
+        new_list = []
+        current_group = None
+
+        for ma_mh in sorted_codes:
+            row = self.analysis_results[ma_mh]
+            ten = str(row.get("TenMH") or "")
+            item_text = f"  {ma_mh} – {ten}"
+
+            if keyword and keyword not in item_text.lower():
+                continue
+
+            p, *_ = self._get_group_info(ma_mh)
+            if not keyword and p != current_group:
+                current_group = p
+                glabel, gbg, gfg = GROUP_LABELS[p]
+                self.listbox_subjects.insert(tk.END, f"  {glabel}")
+                idx = self.listbox_subjects.size() - 1
+                self.listbox_subjects.itemconfigure(idx, bg=gbg, fg=gfg,
+                    selectbackground=gbg, selectforeground=gfg)
+                new_list.append(None)
+
+            color = self.get_subject_color(ma_mh)
+            self.listbox_subjects.insert(tk.END, item_text)
+            idx = self.listbox_subjects.size() - 1
+            self.listbox_subjects.itemconfigure(idx, bg=color, fg="#1e293b")
+            new_list.append(ma_mh)
+
+        self.all_subjects_list = new_list
