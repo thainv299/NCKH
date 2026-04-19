@@ -103,6 +103,21 @@ class SubjectAnalysisTab:
             font=("Segoe UI", 9)
         )
         self.lbl_file_status.pack(pady=2)
+
+        # 1.1 Chọn Model (Đưa lên trên để dễ thấy)
+        tk.Label(
+            frame_file, 
+            text="Mô hình huấn luyện:", 
+            bg="#f1f5f9",
+            fg="#475569",
+            font=("Segoe UI", 9, "bold")
+        ).pack(anchor="w", padx=5, pady=(5, 0))
+        
+        model_f = tk.Frame(frame_file, bg="#f1f5f9")
+        model_f.pack(fill="x", padx=5, pady=2)
+        
+        tk.Entry(model_f, textvariable=self.model_path, font=("Segoe UI", 8)).pack(side="left", fill="x", expand=True)
+        tk.Button(model_f, text="...", command=self.browse_model, width=3, font=("Segoe UI", 8)).pack(side="left", padx=2)
         
         # 2. Tìm kiếm & Thêm học phần
         frame_search = tk.LabelFrame(
@@ -230,20 +245,6 @@ class SubjectAnalysisTab:
             activebackground="#f1f5f9"
         ).pack(anchor="w", pady=1)
 
-        # 3.1 Chọn model
-        tk.Label(
-            frame_opt, 
-            text="Mô hình huấn luyện:", 
-            bg="#f1f5f9",
-            fg="#475569",
-            font=("Segoe UI", 9, "bold")
-        ).pack(anchor="w", padx=5, pady=(5, 0))
-        
-        model_f = tk.Frame(frame_opt, bg="#f1f5f9")
-        model_f.pack(fill="x", padx=5, pady=2)
-        
-        tk.Entry(model_f, textvariable=self.model_path, font=("Segoe UI", 8)).pack(side="left", fill="x", expand=True)
-        tk.Button(model_f, text="...", command=self.browse_model, width=3, font=("Segoe UI", 8)).pack(side="left", padx=2)
         
         # 4. Nút Chạy Phân Tích - ĐẶT TRONG SCROLLABLE FRAME
         tk.Button(

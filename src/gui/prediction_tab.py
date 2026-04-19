@@ -80,7 +80,7 @@ class StudentPredictionTab:
         model_frame.pack(side="left", padx=20)
         
         tk.Label(model_frame, text="Model:", bg="#e2e8f0", font=("Segoe UI", 9, "bold")).pack(side="left")
-        tk.Entry(model_frame, textvariable=self.model_path, width=40, font=("Segoe UI", 9)).pack(side="left", padx=5)
+        tk.Entry(model_frame, textvariable=self.model_path, width=30, font=("Segoe UI", 9)).pack(side="left", padx=5)
         tk.Button(model_frame, text="...", command=self.browse_model, width=3).pack(side="left")
 
         self.status_label = tk.Label(
