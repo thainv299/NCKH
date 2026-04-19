@@ -20,8 +20,6 @@ def train_subject_quality_model(features_df, k=4, seed=42, evaluate_model=True):
     kmeans = KMeans(k=k, seed=seed, featuresCol="features", predictionCol="prediction")
     model = kmeans.fit(data)
 
-    model.write().overwrite().save("models/readiness_kmeans_model")
-
     return model, data
 
 
