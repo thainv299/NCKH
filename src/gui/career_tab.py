@@ -27,6 +27,7 @@ class CareerAnalysisTab:
 
         # Spark
         self.spark = None
+        self.model_path = tk.StringVar(value="models/career_readiness_kmeans_model")
 
         # UI
         self.create_layout()
@@ -119,6 +120,20 @@ class CareerAnalysisTab:
             font=("Arial", 11, "bold"),
             pady=10
         ).pack(fill="x", padx=10, pady=15)
+
+        # === CHON MODEL ===
+        tk.Label(
+            scrollable_frame,
+            text="Mo hinh huan luyen:",
+            bg="#f7f7f7",
+            font=("Arial", 9, "bold")
+        ).pack(anchor="w", padx=10, pady=(5, 0))
+        
+        model_f = tk.Frame(scrollable_frame, bg="#f7f7f7")
+        model_f.pack(fill="x", padx=10, pady=2)
+        
+        tk.Entry(model_f, textvariable=self.model_path, font=("Arial", 9)).pack(side="left", fill="x", expand=True)
+        tk.Button(model_f, text="...", command=self.browse_model, width=3, font=("Arial", 9)).pack(side="left", padx=2)
 
         # === NUT XUAT CSV ===
         tk.Button(
@@ -228,7 +243,8 @@ class CareerAnalysisTab:
 
             result_df, real_jobs, important_subjects = CareerAnalyzer.analyze_students(
                 spark_df,
-                keyword
+                keyword,
+                model_path=self.model_path.get()
             )
 
             if result_df is None or result_df.empty:

@@ -48,6 +48,7 @@ class StudentPredictionTab:
         self.parent        = parent
         self.spark         = None
         self._row_data_map = {}
+        self.model_path    = tk.StringVar(value="models/student_analysis_kmeans_model")
         self.create_layout()
 
     def get_spark(self):
@@ -73,6 +74,14 @@ class StudentPredictionTab:
             relief="flat", padx=16, pady=6, cursor="hand2",
             activebackground="#2563eb", activeforeground="white",
         ).pack(side="left")
+
+        # Thêm phần chọn model
+        model_frame = tk.Frame(toolbar, bg="#e2e8f0")
+        model_frame.pack(side="left", padx=20)
+        
+        tk.Label(model_frame, text="Model:", bg="#e2e8f0", font=("Segoe UI", 9, "bold")).pack(side="left")
+        tk.Entry(model_frame, textvariable=self.model_path, width=40, font=("Segoe UI", 9)).pack(side="left", padx=5)
+        tk.Button(model_frame, text="...", command=self.browse_model, width=3).pack(side="left")
 
         self.status_label = tk.Label(
             toolbar, text="Chưa tải dữ liệu",
@@ -134,6 +143,17 @@ class StudentPredictionTab:
         self.tree.bind("<ButtonRelease-1>", self.on_row_click)
         self.tree.bind("<Return>",           self.on_row_click)
 
+    def browse_model(self):
+        dirname = filedialog.askdirectory(title="Chọn thư mục model",
+                                        initialdir="models")
+        if dirname:
+            # Chuyển sang đường dẫn tương đối nếu có thể
+            try:
+                rel_path = os.path.relpath(dirname, os.getcwd())
+                self.model_path.set(rel_path)
+            except ValueError:
+                self.model_path.set(dirname)
+
     # ── Load & Predict ─────────────────────────────────────────────────────
     def load_and_predict(self):
         path = filedialog.askopenfilename(filetypes=[("CSV", "*.csv")])
@@ -146,7 +166,8 @@ class StudentPredictionTab:
         try:
             spark     = self.get_spark()
             spark_df  = load_csv_file(spark, path)
-            result    = StudentPredictorService.predict_students(spark_df, spark)
+            model_p   = self.model_path.get()
+            result    = StudentPredictorService.predict_students(spark_df, spark, model_path=model_p)
             result_pd = result.limit(2000).toPandas()
             self.show_table(result_pd)
             self.status_label.config(

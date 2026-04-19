@@ -177,7 +177,7 @@ class CareerAnalyzerSpark:
         return df_students
 
     @staticmethod
-    def analyze_students(df_student, keyword="", market_csv=None):
+    def analyze_students(df_student, keyword="", market_csv=None, model_path=None):
         from src.ml.unsupervised.readiness_clustering import ReadinessClustering
         from src.ml.supervised.feature_importance_rf import RandomForestFeatureExtractor
 
@@ -199,7 +199,7 @@ class CareerAnalyzerSpark:
         # Gọi thuật toán Machine Learning từ Layer src.ml
         # ==========================
         df = CareerAnalyzerSpark.compute_field_gpa(df)
-        df = ReadinessClustering.cluster(df) # K-Means Unsupervised
+        df = ReadinessClustering.cluster(df, model_path=model_path) # K-Means Unsupervised
         important_subjects = RandomForestFeatureExtractor.extract_important_subjects(df) # Random Forest Supervised
 
         # ==========================

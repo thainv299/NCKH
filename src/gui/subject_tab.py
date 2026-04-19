@@ -19,6 +19,7 @@ class SubjectAnalysisTab:
         self.analysis_results = {}  # key = MaMH
         self.listbox_subjects = None
         self.all_subjects_list = []   # lưu toàn bộ môn để filter
+        self.model_path = tk.StringVar(value="models/readiness_kmeans_model")
         # Tạo giao diện
         self.create_layout()
     
@@ -228,6 +229,21 @@ class SubjectAnalysisTab:
             font=("Segoe UI", 9),
             activebackground="#f1f5f9"
         ).pack(anchor="w", pady=1)
+
+        # 3.1 Chọn model
+        tk.Label(
+            frame_opt, 
+            text="Mô hình huấn luyện:", 
+            bg="#f1f5f9",
+            fg="#475569",
+            font=("Segoe UI", 9, "bold")
+        ).pack(anchor="w", padx=5, pady=(5, 0))
+        
+        model_f = tk.Frame(frame_opt, bg="#f1f5f9")
+        model_f.pack(fill="x", padx=5, pady=2)
+        
+        tk.Entry(model_f, textvariable=self.model_path, font=("Segoe UI", 8)).pack(side="left", fill="x", expand=True)
+        tk.Button(model_f, text="...", command=self.browse_model, width=3, font=("Segoe UI", 8)).pack(side="left", padx=2)
         
         # 4. Nút Chạy Phân Tích - ĐẶT TRONG SCROLLABLE FRAME
         tk.Button(
@@ -241,6 +257,16 @@ class SubjectAnalysisTab:
             cursor="hand2",
             pady=10
         ).pack(fill="x", padx=5, pady=8)
+
+    def browse_model(self):
+        dirname = filedialog.askdirectory(title="Chọn thư mục model",
+                                        initialdir="models")
+        if dirname:
+            try:
+                rel_path = os.path.relpath(dirname, os.getcwd())
+                self.model_path.set(rel_path)
+            except ValueError:
+                self.model_path.set(dirname)
     
     def create_right_panel(self):
         """Tạo panel hiển thị bên phải"""
@@ -311,8 +337,8 @@ class SubjectAnalysisTab:
         for color, label in [
             ("#fd7e7e", "Tiêu cực"),
             ("#fcd143", "Không ổn định"),
-            ("#c4b5fd", "Bình thường"),
-            ("#5eecb3", "Tích cực"),
+            ("#c4b5fd", "Ổn định"),
+            ("#5eecb3", "Xuất sắc"),
         ]:
             row_f = tk.Frame(legend_f, bg="#e2e8f0")
             row_f.pack(side="left", padx=6)
@@ -572,16 +598,18 @@ class SubjectAnalysisTab:
         """Trả về (priority 0=xấu..3=tốt, badge_bg, badge_fg, icon, label)."""
         result = self.analysis_results.get(ma_mh)
         if not result:
-            return (2, "#c4b5fd", "#1e1b4b", "📋", "Bình thường")
-        xu = str(result.get("XuHuong") or "").strip().lower()
-        cl = str(result.get("ChatLuong") or "").strip().lower()
-        if "tiêu cực" in xu:
+            return (2, "#c4b5fd", "#1e1b4b", "📋", "Ổn định")
+        
+        cl = str(result.get("ChatLuongCluster") or "").strip()
+        
+        if "Tiêu cực" in cl:
             return (0, "#ef4444", "#ffffff", "⚡", "Tiêu cực – Cần lưu ý")
-        if "không ổn định" in cl or "cần cải thiện" in cl:
+        if "Không ổn định" in cl:
             return (1, "#f59e0b", "#1c1917", "⚠️", "Không ổn định")
-        if "tích cực" in xu:
-            return (3, "#10b981", "#ffffff", "✅", "Tích cực – Kết quả tốt")
-        return (2, "#8b5cf6", "#ffffff", "📘", "Bình thường – Ổn định")
+        if "Xuất sắc" in cl:
+            return (3, "#10b981", "#ffffff", "✅", "Xuất sắc – Kết quả tốt")
+        
+        return (2, "#8b5cf6", "#ffffff", "📘", "Ổn định")
 
     def get_subject_color(self, ma_mh):
         p, bg, fg, icon, label = self._get_group_info(ma_mh)
@@ -715,7 +743,8 @@ class SubjectAnalysisTab:
             return
 
         try:
-            result_sdf = SubjectAnalyzer.analyze_all_subjects(self.spark_df)
+            model_p = self.model_path.get()
+            result_sdf = SubjectAnalyzer.analyze_all_subjects(self.spark_df, model_path=model_p)
             results = result_sdf.collect()
 
             if not results:
@@ -761,8 +790,8 @@ class SubjectAnalysisTab:
             GROUP_LABELS = {
                 0: ("🔴  Tiêu Cực – Cần Lưu Ý",    "#ef4444", "#ffffff"),
                 1: ("🟡  Không Ổn Định",              "#f59e0b", "#1c1917"),
-                2: ("🟣  Bình Thường – Ổn Định",      "#8b5cf6", "#ffffff"),
-                3: ("🟢  Tích Cực – Kết Quả Tốt",     "#10b981", "#ffffff"),
+                2: ("🟣  Ổn Định",                    "#8b5cf6", "#ffffff"),
+                3: ("🟢  Xuất Sắc – Kết Quả Tốt",     "#10b981", "#ffffff"),
             }
             current_group = None
 

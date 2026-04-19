@@ -10,7 +10,7 @@ class SubjectAnalyzer:
     """
     
     @staticmethod
-    def analyze_subjects(sdf, selected_codes):
+    def analyze_subjects(sdf, selected_codes, model_path=None):
         """
         Phân tích học phần sử dụng kết hợp Rule-based và KMeans clustering.
         
@@ -41,7 +41,7 @@ class SubjectAnalyzer:
 
         # 2. Chất lượng (KMeans Clustering)
         try:
-            sdf = SubjectReadinessClustering.cluster(sdf)
+            sdf = SubjectReadinessClustering.cluster(sdf, model_path=model_path)
             sdf = sdf.withColumn(
                 "ChatLuong",
                 when(col("ChatLuongCluster").contains("Kém"), 
@@ -141,7 +141,7 @@ class SubjectAnalyzer:
         return report_lines
 
     @staticmethod
-    def analyze_all_subjects(sdf):
+    def analyze_all_subjects(sdf, model_path=None):
         """
         Phân tích toàn bộ học phần trong dataset sử dụng KMeans clustering.
         
@@ -167,7 +167,7 @@ class SubjectAnalyzer:
 
         # Chất lượng (KMeans Clustering)
         try:
-            sdf = SubjectReadinessClustering.cluster(sdf)
+            sdf = SubjectReadinessClustering.cluster(sdf, model_path=model_path)
             sdf = sdf.withColumn(
                 "ChatLuong",
                 when(col("ChatLuongCluster").contains("Kém"), 
