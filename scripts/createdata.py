@@ -4,7 +4,7 @@ import random
 import math
 import os
 num_students = 20   
-output_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "input", "data_demo_1.csv")
+output_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "input", "data_demo_1_toeic.csv")
 
 # Mapping mã môn -> tên môn (3 ngành: CNTT, CNPM, Truyền thông & Mạng)
 SUBJECT_NAMES = {
