@@ -60,21 +60,17 @@ class SubjectReadinessClustering:
         cluster_quality = [(i, float(c[0])) for i, c in enumerate(centers)]
         cluster_quality.sort(key=lambda x: x[1], reverse=True)
         
-        # Map cluster ID → label (4 nhóm)
-        # rank 0: TB cao = Xuất sắc
-        # rank 1: TB khá = Ổn định  
-        # rank 2: TB thấp = Bình thường
-        # rank 3: TB rất thấp = Tiêu cực
-        labels = {
-            0: ("Xuất sắc - Tốt", 3),
-            1: ("Ổn định", 1),
-            2: ("Bình thường", 2),
-            3: ("Tiêu cực - Kém", 0)
-        }
+        # Map rank → label (rank 0 = TB cao nhất = Xuất sắc)
+        label_by_rank = [
+            "Xuất sắc - Tốt",      # rank 0: TB cao nhất
+            "Ổn định",             # rank 1: TB khá
+            "Bình thường",         # rank 2: TB thấp
+            "Tiêu cực - Kém"       # rank 3: TB thấp nhất
+        ]
         
         mapping_expr = F.lit("Chưa xác định")
         for rank, (cluster_id, _) in enumerate(cluster_quality):
-            label, _ = labels.get(rank, ("Chưa xác định", 1))
+            label = label_by_rank[rank] if rank < len(label_by_rank) else "Chưa xác định"
             mapping_expr = F.when(F.col("prediction") == cluster_id, F.lit(label)).otherwise(mapping_expr)
         
         df_clustered = df_clustered.withColumn("ChatLuongCluster", mapping_expr)
