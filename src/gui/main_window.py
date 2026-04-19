@@ -39,7 +39,7 @@ class MainWindow:
         
         # Tab 2: Phân tích xu hướng nghề nghiệp
         self.tab_career = tk.Frame(self.notebook_main)
-        self.notebook_main.add(self.tab_career, text="Xu hướng Nghề nghiệp SV")
+        self.notebook_main.add(self.tab_career, text="Đánh giá tính sẵn sàng nghề nghiệp")
         self.career_analysis = CareerAnalysisTab(self.tab_career)
         
         #Tab 3: Dự đoán mức độ nguy hiểm của sinh viên

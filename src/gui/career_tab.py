@@ -1,3 +1,7 @@
+"""
+Tab đánh giá mức độ sẵn sàng nghề nghiệp
+GPA theo nhóm môn → Đối sánh thị trường → KMeans phân cụm
+"""
 import tkinter as tk
 from tkinter import filedialog, ttk, messagebox
 
@@ -9,30 +13,31 @@ from src.services.career_analyzer import CareerAnalyzerSpark as CareerAnalyzer
 
 class CareerAnalysisTab:
     """
-    Class quản lý giao diện và logic Tab xu hướng nghề nghiệp
+    Tab danh gia muc do san sang nghe nghiep
     """
 
     def __init__(self, parent_frame):
         self.parent = parent_frame
 
-        # Dữ liệu
-        # chỉ sử dụng Spark DataFrame làm nguồn dữ liệu chính
+        # Du lieu
         self.spark_df = None
         self.df_career_result = None
+        self.market_data = None
+        self.important_subjects = None
 
-        # Spark (khởi tạo lazy)
+        # Spark
         self.spark = None
 
         # UI
         self.create_layout()
 
     # ======================================================
-    # SPARK SESSION (AN TOÀN)
+    # SPARK SESSION
     # ======================================================
     def get_spark(self):
         if self.spark is None:
             self.spark = SparkSession.builder \
-                .appName("Career Analysis VMU") \
+                .appName("Career Readiness VMU") \
                 .master("local[*]") \
                 .getOrCreate()
         return self.spark
@@ -73,18 +78,20 @@ class CareerAnalysisTab:
         canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
 
+        # === HEADER ===
         tk.Label(
             scrollable_frame,
-            text="PHÂN TÍCH XU HƯỚNG SINH VIÊN",
+            text="DANH GIA SAN SANG NGHE NGHIEP",
             bg="#2c3e50",
             fg="white",
-            font=("Arial", 12, "bold"),
+            font=("Arial", 11, "bold"),
             pady=10
         ).pack(fill="x")
 
+        # === NUT TAI CSV ===
         tk.Button(
             scrollable_frame,
-            text="📂 TẢI CSV ĐIỂM SINH VIÊN",
+            text="TAI CSV DIEM SINH VIEN",
             command=self.load_student_csv,
             bg="#3498db",
             fg="white",
@@ -92,18 +99,20 @@ class CareerAnalysisTab:
             pady=8
         ).pack(fill="x", padx=10, pady=10)
 
+        # === TIM KIEM ===
         tk.Label(
             scrollable_frame,
-            text="🔍 Tìm kiếm (Mã SV / Họ tên):",
+            text="Tim kiem (Ma SV / Ho ten):",
             bg="#f7f7f7"
         ).pack(anchor="w", padx=10)
 
         self.entry_search_sv = tk.Entry(scrollable_frame)
         self.entry_search_sv.pack(fill="x", padx=10, pady=5)
 
+        # === NUT DANH GIA ===
         tk.Button(
             scrollable_frame,
-            text="📝 PHÂN TÍCH XU HƯỚNG",
+            text="DANH GIA SAN SANG",
             command=self.analyze_career,
             bg="#8e44ad",
             fg="white",
@@ -111,9 +120,10 @@ class CareerAnalysisTab:
             pady=10
         ).pack(fill="x", padx=10, pady=15)
 
+        # === NUT XUAT CSV ===
         tk.Button(
             scrollable_frame,
-            text="💾 XUẤT CSV KẾT QUẢ",
+            text="XUAT CSV KET QUA",
             command=self.export_csv,
             bg="#16a085",
             fg="white",
@@ -124,8 +134,9 @@ class CareerAnalysisTab:
         self.notebook = ttk.Notebook(self.right_frame)
         self.notebook.pack(fill="both", expand=True)
 
+        # Tab 1: Du lieu SV
         self.tab_data = tk.Frame(self.notebook)
-        self.notebook.add(self.tab_data, text="📋 Dữ liệu Sinh viên")
+        self.notebook.add(self.tab_data, text="Du lieu Sinh vien")
 
         table_frame = tk.Frame(self.tab_data)
         table_frame.pack(fill="both", expand=True)
@@ -146,8 +157,20 @@ class CareerAnalysisTab:
         scroll_x.pack(side=tk.BOTTOM, fill="x")
         self.tree.pack(side=tk.LEFT, fill="both", expand=True)
 
+        # Tab 2: Thi truong lao dong
+        self.tab_market = tk.Frame(self.notebook)
+        self.notebook.add(self.tab_market, text="Thi truong Lao dong")
+
+        self.txt_market = tk.Text(
+            self.tab_market,
+            font=("Consolas", 11),
+            wrap="word"
+        )
+        self.txt_market.pack(fill="both", expand=True, padx=10, pady=10)
+
+        # Tab 3: Bao cao san sang
         self.tab_report = tk.Frame(self.notebook)
-        self.notebook.add(self.tab_report, text="📄 Báo cáo Xu hướng")
+        self.notebook.add(self.tab_report, text="Bao cao San sang")
 
         self.txt_report = tk.Text(
             self.tab_report,
@@ -168,14 +191,13 @@ class CareerAnalysisTab:
         try:
             spark = self.get_spark()
             self.spark_df = load_csv_file(spark, path)
-            # show a sample to user
             sample = self.spark_df.limit(2000).toPandas()
             self.show_table(sample)
 
             total = self.spark_df.count()
-            messagebox.showinfo("Thành công", f"Đã tải {total} sinh viên")
+            messagebox.showinfo("Thanh cong", f"Da tai {total} sinh vien")
         except Exception as e:
-            messagebox.showerror("Lỗi", str(e))
+            messagebox.showerror("Loi", str(e))
 
     def show_table(self, df):
         self.tree.delete(*self.tree.get_children())
@@ -194,95 +216,178 @@ class CareerAnalysisTab:
     def analyze_career(self):
         if self.spark_df is None:
             messagebox.showwarning(
-                "Chưa có dữ liệu",
-                "Vui lòng tải CSV điểm sinh viên trước."
+                "Chua co du lieu",
+                "Vui long tai CSV diem sinh vien truoc."
             )
             return
 
         keyword = self.entry_search_sv.get().strip().lower()
 
         try:
-            spark = self.get_spark()
-
-            # dùng trực tiếp spark_df đã đọc
             spark_df = self.spark_df.cache()
-            spark_result = CareerAnalyzer.analyze_students(
+
+            result_df, real_jobs, important_subjects = CareerAnalyzer.analyze_students(
                 spark_df,
                 keyword
             )
 
-            if spark_result is None or spark_result.count() == 0:
+            if result_df is None or result_df.empty:
                 messagebox.showinfo(
-                    "Không có dữ liệu",
-                    "Không tìm thấy sinh viên phù hợp."
+                    "Khong co du lieu",
+                    "Khong tim thay sinh vien phu hop."
                 )
                 return
 
-            # spark → pandas (chỉ cần mẫu nếu dataset lớn)
-            result_df = spark_result.limit(2000).toPandas()
             self.df_career_result = result_df
-            # Hiển thị bảng
+            self.market_data = real_jobs
+            self.important_subjects = important_subjects
+
+            # Hien thi bang ket qua
             self.show_table(result_df)
 
-            # =============================
-            # SINH BÁO CÁO CHI TIẾT
-            # =============================
-            self.txt_report.delete(1.0, tk.END)
-            self.notebook.select(self.tab_report)
+            # Hien thi thi truong
+            self.show_market_report(real_jobs, important_subjects)
 
-            self.txt_report.insert(
-                tk.END,
-                f"ĐÃ PHÂN TÍCH {len(result_df)} SINH VIÊN\n\n"
-            )
-
-            for idx, row in result_df.iterrows():
-                ma_sv = row.get("ma_sv", "")
-                ho_ten = row.get("ho_ten", "")
-                nganh = row.get("nganh_phu_hop", "")
-
-                self.txt_report.insert(tk.END, f"SINH VIÊN {idx + 1}\n")
-                self.txt_report.insert(tk.END, f"Mã sinh viên : {ma_sv}\n")
-                self.txt_report.insert(tk.END, f"Họ và tên    : {ho_ten}\n\n")
-
-                self.txt_report.insert(
-                    tk.END,
-                    "• Kết quả phân tích học tập:\n"
-                    "- Điểm trung bình các môn chuyên ngành phản ánh rõ xu hướng học tập.\n\n"
-                )
-
-                self.txt_report.insert(
-                    tk.END,
-                    "• Định hướng nghề nghiệp đề xuất:\n"
-                    f"→ Ngành phù hợp: {nganh}\n\n"
-                )
-
-                self.txt_report.insert(
-                    tk.END,
-                    "-" * 60 + "\n\n"
-                )
+            # Hien thi bao cao chi tiet
+            self.show_readiness_report(result_df)
 
             messagebox.showinfo(
-                "Hoàn tất",
-                f"Đã phân tích và tạo báo cáo cho {len(result_df)} sinh viên."
+                "Hoan tat",
+                f"Da phan tich {len(result_df)} sinh vien."
             )
 
         except Exception as e:
-            messagebox.showerror("Lỗi Phân Tích", str(e))
+            messagebox.showerror("Loi Phan Tich", str(e))
+
+    def show_market_report(self, real_jobs, important_subjects):
+        """Hien thi tab Thi truong Lao dong (Macro Stats)"""
+        self.txt_market.delete(1.0, tk.END)
+
+        self.txt_market.insert(tk.END, "=" * 60 + "\n")
+        self.txt_market.insert(tk.END, "  DU LIEU THI TRUONG IT THUC TE (TOPDEV MACRO API)\n")
+        self.txt_market.insert(tk.END, "=" * 60 + "\n\n")
+        
+        if not real_jobs:
+            self.txt_market.insert(tk.END, "  (Chua co du lieu thi truong. Vui long chay Crawl Market Data)\n\n")
+        else:
+            # Tinh tong so bai tuyen dung IT
+            total_it = 0
+            for job in real_jobs:
+                if job.get("Category", "") == "IT":
+                    try:
+                        total_it += int(job.get("JobCount", 0))
+                    except:
+                        pass
+            
+            self.txt_market.insert(tk.END, f"  Tong so viec lam Nganh IT hien tai: {total_it} jobs\n\n")
+            self.txt_market.insert(tk.END, "  [PHAN BO THEO CHUYEN NGANH (ROLES)]:\n")
+            
+            # Sort by job count
+            sorted_jobs = []
+            for job in real_jobs:
+                if job.get("Category", "") == "IT":
+                    try:
+                        count = int(job.get("JobCount", 0))
+                        sorted_jobs.append((job.get("Role", "N/A"), count))
+                    except:
+                        pass
+            sorted_jobs.sort(key=lambda x: x[1], reverse=True)
+            
+            for role, count in sorted_jobs:
+                ratio = (count / max(total_it, 1)) * 100
+                bar = "|" * int(ratio / 2)
+                self.txt_market.insert(tk.END, f"  + {role[:35]:<35}: {count:<4} Jobs ({ratio:4.1f}%) {bar}\n")
+            self.txt_market.insert(tk.END, "\n")
+
+        if important_subjects:
+            self.txt_market.insert(tk.END, "-" * 60 + "\n")
+            self.txt_market.insert(tk.END, "  TOP MON HOC ANH HUONG DEN SAN SANG NGHE NGHIEP\n")
+            self.txt_market.insert(tk.END, "  (Decision Tree Feature Importance)\n")
+            self.txt_market.insert(tk.END, "-" * 60 + "\n\n")
+
+            from scripts.createdata import SUBJECT_NAMES
+            for code, importance in important_subjects:
+                name = SUBJECT_NAMES.get(code, code)
+                bar = "#" * int(importance / 2)
+                self.txt_market.insert(
+                    tk.END,
+                    f"    {code} ({name}): {importance}% {bar}\n"
+                )
+
+    def show_readiness_report(self, result_df):
+        """Hien thi tab Bao cao San sang & Matching"""
+        self.txt_report.delete(1.0, tk.END)
+        self.notebook.select(self.tab_report)
+
+        self.txt_report.insert(
+            tk.END,
+            f"DA PHAN TICH {len(result_df)} SINH VIEN\n\n"
+        )
+
+        # Thong ke tong quan
+        if "nhom_san_sang" in result_df.columns:
+            self.txt_report.insert(tk.END, "=" * 60 + "\n")
+            self.txt_report.insert(tk.END, "  1. MUC DO SAN SANG (READINESS ML MODEL)\n")
+            self.txt_report.insert(tk.END, "=" * 60 + "\n\n")
+
+            counts = result_df["nhom_san_sang"].value_counts()
+            total = len(result_df)
+            for group, count in counts.items():
+                pct = count / total * 100
+                bar = "|" * int(pct / 2)
+                self.txt_report.insert(
+                    tk.END,
+                    f"  {group[:20]:20s}: {count:4d} SV ({pct:5.1f}%) {bar}\n"
+                )
+            self.txt_report.insert(tk.END, "\n")
+
+        # Chi tiet tung SV
+        self.txt_report.insert(tk.END, "=" * 60 + "\n")
+        self.txt_report.insert(tk.END, "  2. DANH GIA CO HOI & LO TRINH NGHE NGHIEP (MACRO MAPPING)\n")
+        self.txt_report.insert(tk.END, "=" * 60 + "\n\n")
+
+        for idx, row in result_df.iterrows():
+            if idx >= 50:  # Gioi han hien thi 50 SV
+                self.txt_report.insert(tk.END, f"\n... va {len(result_df) - 50} sinh vien khac.\n")
+                break
+
+            ma_sv = row.get("ma_sv", "")
+            ho_ten = row.get("ho_ten", "")
+            gpa = row.get("gpa_tong", 0)
+            nhom = row.get("nhom_san_sang", "")
+            toeic = row.get("TOEIC", 0)
+            matched_track = row.get("top_matched_jobs", "Khong tim thay")
+
+            self.txt_report.insert(tk.END, f"  SINH VIEN {idx + 1}: {ma_sv} - {ho_ten}\n")
+            self.txt_report.insert(tk.END, f"    GPA tong        : {gpa}/4.0\n")
+            self.txt_report.insert(tk.END, f"    TOEIC           : {toeic}\n")
+            self.txt_report.insert(tk.END, f"    Muc do San sang : {nhom}\n")
+            
+            self.txt_report.insert(tk.END, f"\n    >> PHAN TICH THE MANH VÀ CO HOI THI TRUONG:\n")
+            for line in matched_track.split("\n"):
+                self.txt_report.insert(tk.END, f"       {line}\n")
+            
+            self.txt_report.insert(tk.END, "\n" + "-" * 60 + "\n\n")
 
     def export_csv(self):
         if self.df_career_result is None:
-            messagebox.showwarning("Chưa có dữ liệu", "Chưa có kết quả.")
+            messagebox.showwarning("Chua co du lieu", "Chua co ket qua.")
             return
+
+        import os
+        default_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "data", "output")
+        os.makedirs(default_dir, exist_ok=True)
 
         path = filedialog.asksaveasfilename(
             defaultextension=".csv",
             filetypes=[("CSV files", "*.csv")],
-            initialfile="xu_huong_nghe_nghiep_sinh_vien.csv"
+            initialdir=default_dir,
+            initialfile="danh_gia_san_sang_nghe_nghiep.csv"
         )
 
         if path:
             try:
                 self.df_career_result.to_csv(path, index=False, encoding="utf-8-sig")
-                messagebox.showinfo("Hoàn tất", "Đã xuất file CSV.")
+                messagebox.showinfo("Hoan tat", "Da xuat file CSV.")
             except Exception as e:
-                messagebox.showerror("Lỗi", str(e))
+                messagebox.showerror("Loi", str(e))
