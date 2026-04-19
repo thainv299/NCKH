@@ -6,6 +6,7 @@ from tkinter import ttk, filedialog, messagebox
 import os
 import sys
 import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 # Cấu hình đường dẫn gốc của dự án để hỗ trợ nạp các module liên quan.
@@ -182,33 +183,35 @@ class TrainingUI:
             chart_window.title("Phân tích tham số K tối ưu")
             chart_window.geometry("1200x600")
 
-            fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
+            # Tạo Figure với trục kép (twin axes) giống biểu đồ gốc
+            fig = Figure(figsize=(10, 6), dpi=100)
+            ax1 = fig.add_subplot(111)
 
-            # Biểu đồ Silhouette Score.
-            k_values = list(results.keys())
-            silhouette_scores = [results[k]['silhouette'] for k in k_values]
-            ax1.plot(k_values, silhouette_scores, 'bo-', linewidth=2, markersize=8)
-            ax1.set_title(' Silhouette Score theo K')
-            ax1.set_xlabel('Số cụm (K)')
-            ax1.set_ylabel('Silhouette Score')
-            ax1.grid(True, alpha=0.3)
+            k_values = results['k_values']
+            wcss_costs = results['wcss_costs']
+            silhouette_scores = results['silhouette_scores']
 
-            # optimal_idx = k_values.index(optimal_k)
-            # ax1.plot(optimal_k, silhouette_scores[optimal_idx], 'ro', markersize=12, label=f'K tối ưu: {optimal_k}')
-            # ax1.legend()
+            # Trục Y thứ nhất: WCSS (Màu đỏ)
+            ax1.set_xlabel('Số lượng cụm (K)', fontsize=10, fontweight='bold')
+            ax1.set_ylabel('WCSS (Training Cost)', color='tab:red', fontsize=10, fontweight='bold')
+            ax1.plot(k_values, wcss_costs, marker='o', color='tab:red', linewidth=2, label='WCSS (Elbow)')
+            ax1.tick_params(axis='y', labelcolor='tab:red')
+            ax1.grid(True, linestyle='--', alpha=0.3)
 
-            # Biểu đồ WCSS (Elbow Method).
-            wcss_values = [results[k]['wcss'] for k in k_values]
-            ax2.plot(k_values, wcss_values, 'go-', linewidth=2, markersize=8)
-            ax2.set_title('WCSS ( Elbow Method) theo K')
-            ax2.set_xlabel('Số cụm (K)')
-            ax2.set_ylabel('Tổng bình phương sai số')
-            ax2.grid(True, alpha=0.3)
+            # Trục Y thứ hai: Silhouette (Màu xanh)
+            ax2 = ax1.twinx()
+            ax2.set_ylabel('Hệ số Silhouette', color='tab:blue', fontsize=10, fontweight='bold')
+            ax2.plot(k_values, silhouette_scores, marker='s', color='tab:blue', linewidth=2, linestyle='dashed', label='Silhouette')
+            ax2.tick_params(axis='y', labelcolor='tab:blue')
 
-            # ax2.plot(optimal_k, wcss_values[optimal_idx], 'ro', markersize=12, label=f'Điểm Elbow: K = {optimal_k}')
-            # ax2.legend()
+            fig.suptitle('Đánh giá Mô hình KMeans: Phương pháp Khuỷu tay & Hệ số Silhouette', fontsize=12, fontweight='bold')
 
-            plt.tight_layout()
+            # Hợp nhất Legend
+            lines1, labels1 = ax1.get_legend_handles_labels()
+            lines2, labels2 = ax2.get_legend_handles_labels()
+            ax1.legend(lines1 + lines2, labels1 + labels2, loc='upper right')
+
+            fig.tight_layout()
 
             canvas = FigureCanvasTkAgg(fig, master=chart_window)
             canvas.draw()
