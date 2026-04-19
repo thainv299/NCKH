@@ -6,23 +6,11 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../.
 from src.clustering.load_data import load_data
 from src.clustering.transform import transform_to_fact
 from src.clustering.feature_engineering import create_features
-from src.clustering.model_training import train_model
-from src.clustering.evaluation import evaluate, evaluate_optimal_k_for_data
+from src.ml.unsupervised.train_risk import train_model
+from src.clustering.evaluation import evaluate
 
-if __name__ == "__main__":
-    print("🚀 Bắt đầu pipeline clustering...")
-
-    # Load data
-    print("📊 Loading data...")
-    spark, df = load_data("data/data_demo.csv")
-
-    # Transform
-    print("🔄 Transforming to fact table...")
-    fact_score = transform_to_fact(df)
-
-    # Feature engineering
-    print("⚙️ Creating features...")
-    features = create_features(fact_score)
+# 1. Load
+spark, df = load_data("data/input/data_demo_1.csv")
 
     # Evaluate optimal K
     print("🔍 Evaluating optimal number of clusters...")
