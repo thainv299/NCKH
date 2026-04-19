@@ -68,7 +68,7 @@ class RiskClustering:
         data = assembler.transform(df_final)
         result = model.transform(data)
 
-        # Mapping mức độ rủi ro (Theo ID cụm được đào tạo trước đó của người dùng)
+        # Mapping mức độ rủi ro
         risk_mapping = {
             2: 0,  # Nguy hiểm 
             0: 1,  # Trung bình

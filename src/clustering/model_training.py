@@ -16,9 +16,4 @@ def train_model(features, k=4):
     kmeans = KMeans(k=k, seed=1)
     model = kmeans.fit(data)
 
-    # Save model
-    model_path = "models/kmeans_model"
-    model.write().overwrite().save(model_path)
-    print(f"💾 Model saved to {model_path}")
-
     return model, data

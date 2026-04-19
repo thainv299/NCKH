@@ -24,6 +24,7 @@ from src.ml.unsupervised.train_readiness_subjects import train_subject_quality_m
 from src.ml.unsupervised.evaluate_kmeans import evaluate_optimal_k
 
 from pyspark.sql import SparkSession
+from pyspark.ml.feature import VectorAssembler
 
 class TrainingUI:
     """
@@ -40,6 +41,7 @@ class TrainingUI:
         self.data_file = tk.StringVar()
         self.k_value = tk.StringVar(value="4")
         self.output_path = tk.StringVar(value="models/")
+        self.model_name = tk.StringVar(value="kmeans_model")
 
         self.spark = None
 
@@ -97,13 +99,17 @@ class TrainingUI:
         output_frame = ttk.LabelFrame(main_frame, text="Lưu trữ mô hình", padding="10")
         output_frame.pack(fill=tk.X, pady=5)
 
-        ttk.Label(output_frame, text="Thư mục lưu:").grid(row=0, column=0, sticky=tk.W, pady=5)
+        ttk.Label(output_frame, text="Tên mô hình:").grid(row=0, column=0, sticky=tk.W, pady=5)
+        name_entry = ttk.Entry(output_frame, textvariable=self.model_name, width=50)
+        name_entry.grid(row=0, column=1, padx=10, pady=5)
+
+        ttk.Label(output_frame, text="Thư mục lưu:").grid(row=1, column=0, sticky=tk.W, pady=5)
         output_entry = ttk.Entry(output_frame, textvariable=self.output_path, width=50)
-        output_entry.grid(row=0, column=1, padx=10, pady=5)
+        output_entry.grid(row=1, column=1, padx=10, pady=5)
 
         browse_output_btn = ttk.Button(output_frame, text="Chọn thư mục...",
                                       command=self.browse_output_path)
-        browse_output_btn.grid(row=0, column=2, padx=5, pady=5)
+        browse_output_btn.grid(row=1, column=2, padx=5, pady=5)
 
         # Thực thi tiến trình huấn luyện.
         train_frame = ttk.Frame(main_frame)
@@ -129,10 +135,13 @@ class TrainingUI:
 
         if "Student Analysis" in training_type:
             self.data_file.set("data/data_demo.csv")
+            self.model_name.set("student_analysis_kmeans_model")
         elif "Career Readiness" in training_type:
             self.data_file.set("data/data_demo_1.csv")
+            self.model_name.set("career_readiness_kmeans_model")
         elif "Subject Quality" in training_type:
             self.data_file.set("data/Thongke.Csv")
+            self.model_name.set("subject_quality_kmeans_model")
 
     def browse_data_file(self):
         """Mở hộp thoại chọn tệp dữ liệu đầu vào."""
@@ -184,9 +193,9 @@ class TrainingUI:
             ax1.set_ylabel('Silhouette Score')
             ax1.grid(True, alpha=0.3)
 
-            optimal_idx = k_values.index(optimal_k)
-            ax1.plot(optimal_k, silhouette_scores[optimal_idx], 'ro', markersize=12, label=f'K tối ưu: {optimal_k}')
-            ax1.legend()
+            # optimal_idx = k_values.index(optimal_k)
+            # ax1.plot(optimal_k, silhouette_scores[optimal_idx], 'ro', markersize=12, label=f'K tối ưu: {optimal_k}')
+            # ax1.legend()
 
             # Biểu đồ WCSS (Elbow Method).
             wcss_values = [results[k]['wcss'] for k in k_values]
@@ -196,8 +205,8 @@ class TrainingUI:
             ax2.set_ylabel('Tổng bình phương sai số')
             ax2.grid(True, alpha=0.3)
 
-            ax2.plot(optimal_k, wcss_values[optimal_idx], 'ro', markersize=12, label=f'Điểm Elbow: K = {optimal_k}')
-            ax2.legend()
+            # ax2.plot(optimal_k, wcss_values[optimal_idx], 'ro', markersize=12, label=f'Điểm Elbow: K = {optimal_k}')
+            # ax2.legend()
 
             plt.tight_layout()
 
@@ -240,7 +249,6 @@ class TrainingUI:
                 features = create_features(fact_score)
                 feature_cols = ["gpa", "std_score", "failed_subjects", "excellent_subjects"]
 
-                from pyspark.ml.feature import VectorAssembler
                 assembler = VectorAssembler(inputCols=feature_cols, outputCol="features")
                 return assembler.transform(features)
 
@@ -289,6 +297,12 @@ class TrainingUI:
             k = int(self.k_value.get())
             output_path = self.output_path.get()
 
+            model_name = self.model_name.get()
+
+            if not model_name:
+                messagebox.showerror("Lỗi", "Yêu cầu nhập tên mô hình")
+                return
+
             if not data_file:
                 messagebox.showerror("Lỗi", "Yêu cầu chọn dữ liệu đầu vào")
                 return
@@ -305,11 +319,11 @@ class TrainingUI:
             os.makedirs(output_path, exist_ok=True)
 
             if "Student Analysis" in training_type:
-                self.train_student_analysis(data_file, k, output_path)
+                self.train_student_analysis(data_file, k, output_path, model_name)
             elif "Career Readiness" in training_type:
-                self.train_career_readiness(data_file, k, output_path)
+                self.train_career_readiness(data_file, k, output_path, model_name)
             elif "Subject Quality" in training_type:
-                self.train_subject_quality(data_file, k, output_path)
+                self.train_subject_quality(data_file, k, output_path, model_name)
 
             self.status_label.config(text="Huấn luyện mô hình hoàn tất", foreground="green")
             messagebox.showinfo("Thông báo", "Quá trình huấn luyện đã kết thúc thành công.")
@@ -318,17 +332,18 @@ class TrainingUI:
             messagebox.showerror("Lỗi", f"Lỗi thực thi huấn luyện: {str(e)}")
             self.status_label.config(text="Thất bại", foreground="red")
 
-    def train_student_analysis(self, data_file, k, output_path):
+    def train_student_analysis(self, data_file, k, output_path, model_name):
         """Tiến trình huấn luyện mô hình phân tích sinh viên."""
         spark, df = load_data(data_file.replace(project_root + os.sep, ""))
         fact_score = transform_to_fact(df)
         features = create_features(fact_score)
         model, data = train_model(features, k=k)
 
-        model_path = os.path.join(output_path, "student_analysis_kmeans_model")
+        model_path = os.path.join(output_path, model_name)
         model.write().overwrite().save(model_path)
+        print(f"💾 Mô hình (Sinh viên) đã được lưu tại: {model_path}")
 
-    def train_career_readiness(self, data_file, k, output_path):
+    def train_career_readiness(self, data_file, k, output_path, model_name):
         """Tiến trình huấn luyện mô hình đánh giá sẵn sàng nghề nghiệp."""
         spark = SparkSession.builder.appName("TrainCareerReadiness").getOrCreate()
         df = spark.read.csv(data_file, header=True, inferSchema=True, sep=";")
@@ -354,10 +369,11 @@ class TrainingUI:
         kmeans = KMeans(k=k, seed=42, featuresCol="features", predictionCol="cluster")
         model = kmeans.fit(df_vec)
 
-        model_path = os.path.join(output_path, "career_readiness_kmeans_model")
+        model_path = os.path.join(output_path, model_name)
         model.write().overwrite().save(model_path)
+        print(f"💾 Mô hình (Nghề nghiệp) đã được lưu tại: {model_path}")
 
-    def train_subject_quality(self, data_file, k, output_path):
+    def train_subject_quality(self, data_file, k, output_path, model_name):
         """Tiến trình huấn luyện mô hình chất lượng môn học."""
         spark = SparkSession.builder.appName("TrainSubjectQuality").getOrCreate()
         df = spark.read \
@@ -368,8 +384,9 @@ class TrainingUI:
 
         model, data = train_subject_quality_model(df, k=k, evaluate_model=False)
 
-        model_path = os.path.join(output_path, "subject_quality_kmeans_model")
+        model_path = os.path.join(output_path, model_name)
         model.write().overwrite().save(model_path)
+        print(f"💾 Mô hình (Môn học) đã được lưu tại: {model_path}")
 
 
 def main():
