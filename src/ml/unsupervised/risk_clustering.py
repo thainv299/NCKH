@@ -7,22 +7,21 @@ from src.utils.data_utils import convert_to_4_scale
 
 class RiskClustering:
     @staticmethod
-    def cluster(spark_df):
+    def cluster(spark_df, model_path=None):
         """
         Dự đoán rủi ro học tập bằng thuật toán KMeans k=4.
         """
-        # Định tuyến lấy mô hình pre-trained
-        # Cấu trúc: d:\NCKH\src\ml\unsupervised\risk_clustering.py
-        model_path = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))),
-            "models", "kmeans_model"
-        )
+        # Nếu không truyền đường dẫn, sử dụng mặc định
+        if not model_path:
+            model_path = os.path.join(
+                os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))),
+                "models", "student_analysis_kmeans_model"
+            )
         
         try:
             model = KMeansModel.load(model_path)
         except Exception as e:
-            # Nếu không thể load tự động trả về df chưa dự đoán
-            print(f"Không thể tải mô hình Risk: {e}")
+            print(f"Không thể tải mô hình Risk từ {model_path}: {e}")
             return spark_df
 
         subject_cols = [c for c in spark_df.columns if c not in ["ma_sv", "ho_ten", "TOEIC"]]
