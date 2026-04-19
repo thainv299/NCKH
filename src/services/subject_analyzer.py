@@ -1,21 +1,28 @@
 """
 Xử lý logic phân tích học phần
 """
-from pyspark.sql.functions import col, when
+from pyspark.sql.functions import col, when, round as spark_round
+from src.ml.unsupervised.subject_readiness_clustering import SubjectReadinessClustering
 
 class SubjectAnalyzer:
     """
-    Class xử lý phân tích học phần bằng Spark
+    Class xử lý phân tích học phần bằng Spark + KMeans Clustering
     """
     
     @staticmethod
     def analyze_subjects(sdf, selected_codes):
         """
-        sdf: Spark DataFrame
-        selected_codes: list mã môn
+        Phân tích học phần sử dụng kết hợp Rule-based và KMeans clustering.
+        
+        Args:
+            sdf: Spark DataFrame
+            selected_codes: list mã môn cần phân tích
+            
+        Returns:
+            DataFrame với các cột phân tích
         """
 
-        # Lọc bằng Spark (KHÔNG dùng pandas nữa)
+        # Lọc bằng Spark
         sdf = sdf.filter(col("MaMH").isin(selected_codes))
 
         # Ép kiểu số (quan trọng)
@@ -24,7 +31,7 @@ class SubjectAnalyzer:
             if c in sdf.columns:
                 sdf = sdf.withColumn(c, col(c).cast("double"))
 
-        # 1. Độ khó
+        # 1. Độ khó (Rule-based)
         sdf = sdf.withColumn(
             "DoKho",
             when((col("TB") < 6.0) | (col("F%") > 15), "Khó")
@@ -32,24 +39,38 @@ class SubjectAnalyzer:
             .otherwise("Trung bình")
         )
 
-        # 2. Chất lượng
-        if "SD" in sdf.columns and "A%" in sdf.columns and "A+%" in sdf.columns:
+        # 2. Chất lượng (KMeans Clustering)
+        try:
+            sdf = SubjectReadinessClustering.cluster(sdf)
             sdf = sdf.withColumn(
                 "ChatLuong",
-                when((col("SD") > 1.0) & (col("F%") > 10),
+                when(col("ChatLuongCluster").contains("Kém"), 
                      "Không ổn định / Cần cải thiện")
-                .when((col("A%") + col("A+%") > 40) & (col("SD") < 0.7),
+                .when(col("ChatLuongCluster").contains("Xuất sắc"),
                       "Tốt & đồng đều")
                 .otherwise("Ổn định")
             )
-        else:
-            sdf = sdf.withColumn(
-                "ChatLuong",
-                when(col("MaMH").isNotNull(),
-                     "Không đủ dữ liệu đánh giá")
-            )
+            sdf = sdf.drop("ChatLuongCluster")
+        except Exception as e:
+            # Fallback về rule-based nếu clustering thất bại
+            print(f"KMeans clustering thất bại, fallback rule-based: {e}")
+            if "SD" in sdf.columns and "A%" in sdf.columns and "A+%" in sdf.columns:
+                sdf = sdf.withColumn(
+                    "ChatLuong",
+                    when((col("SD") > 1.0) & (col("F%") > 10),
+                         "Không ổn định / Cần cải thiện")
+                    .when((col("A%") + col("A+%") > 40) & (col("SD") < 0.7),
+                          "Tốt & đồng đều")
+                    .otherwise("Ổn định")
+                )
+            else:
+                sdf = sdf.withColumn(
+                    "ChatLuong",
+                    when(col("MaMH").isNotNull(),
+                         "Không đủ dữ liệu đánh giá")
+                )
 
-        # 3. Xu hướng
+        # 3. Xu hướng (Rule-based)
         sdf = sdf.withColumn(
             "XuHuong",
             when(col("TB") >= 7.5, "Tích cực")
@@ -59,7 +80,8 @@ class SubjectAnalyzer:
 
         return sdf.select(
             "MaMH", "TenMH", "DoKho",
-            "ChatLuong", "XuHuong", "TB", "F%"
+            "ChatLuong", "XuHuong", spark_round("TB", 2).alias("TB"), 
+            spark_round("F%", 2).alias("F%")
         )
     
     @staticmethod
@@ -120,13 +142,22 @@ class SubjectAnalyzer:
 
     @staticmethod
     def analyze_all_subjects(sdf):
+        """
+        Phân tích toàn bộ học phần trong dataset sử dụng KMeans clustering.
+        
+        Args:
+            sdf: Spark DataFrame chứa dữ liệu các môn học
+            
+        Returns:
+            DataFrame kết quả phân tích
+        """
 
         numeric_cols = ["TB", "F%", "SD", "A%", "A+%"]
         for c in numeric_cols:
             if c in sdf.columns:
                 sdf = sdf.withColumn(c, col(c).cast("double"))
 
-        # Độ khó
+        # Độ khó (Rule-based)
         sdf = sdf.withColumn(
             "DoKho",
             when((col("TB") < 6.0) | (col("F%") > 15), "Khó")
@@ -134,24 +165,38 @@ class SubjectAnalyzer:
             .otherwise("Trung bình")
         )
 
-        # Chất lượng
-        if "SD" in sdf.columns and "A%" in sdf.columns and "A+%" in sdf.columns:
+        # Chất lượng (KMeans Clustering)
+        try:
+            sdf = SubjectReadinessClustering.cluster(sdf)
             sdf = sdf.withColumn(
                 "ChatLuong",
-                when((col("SD") > 1.0) & (col("F%") > 10),
-                    "Không ổn định / Cần cải thiện")
-                .when((col("A%") + col("A+%") > 40) & (col("SD") < 0.7),
-                    "Tốt & đồng đều")
+                when(col("ChatLuongCluster").contains("Kém"), 
+                     "Không ổn định / Cần cải thiện")
+                .when(col("ChatLuongCluster").contains("Xuất sắc"),
+                      "Tốt & đồng đều")
                 .otherwise("Ổn định")
             )
-        else:
-            sdf = sdf.withColumn(
-                "ChatLuong",
-                when(col("MaMH").isNotNull(),
-                    "Không đủ dữ liệu đánh giá")
-            )
+            sdf = sdf.drop("ChatLuongCluster")
+        except Exception as e:
+            # Fallback về rule-based nếu clustering thất bại
+            print(f"KMeans clustering thất bại, fallback rule-based: {e}")
+            if "SD" in sdf.columns and "A%" in sdf.columns and "A+%" in sdf.columns:
+                sdf = sdf.withColumn(
+                    "ChatLuong",
+                    when((col("SD") > 1.0) & (col("F%") > 10),
+                        "Không ổn định / Cần cải thiện")
+                    .when((col("A%") + col("A+%") > 40) & (col("SD") < 0.7),
+                        "Tốt & đồng đều")
+                    .otherwise("Ổn định")
+                )
+            else:
+                sdf = sdf.withColumn(
+                    "ChatLuong",
+                    when(col("MaMH").isNotNull(),
+                        "Không đủ dữ liệu đánh giá")
+                )
 
-        # Xu hướng
+        # Xu hướng (Rule-based)
         sdf = sdf.withColumn(
             "XuHuong",
             when(col("TB") >= 7.5, "Tích cực")
@@ -162,5 +207,6 @@ class SubjectAnalyzer:
         return sdf.select(
             "MaMH", "TenMH",
             "DoKho", "ChatLuong",
-            "XuHuong", "TB", "F%"
+            "XuHuong", spark_round("TB", 2).alias("TB"), 
+            spark_round("F%", 2).alias("F%")
         )
