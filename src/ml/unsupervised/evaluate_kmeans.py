@@ -56,35 +56,6 @@ def evaluate_optimal_k(dataset, min_k=2, max_k=10, seed=42, auto_select=True):
         optimal_k = k_values[len(k_values)//2]  # Default: K ở giữa
         print(f"\n💡 GỠI Ý XEM BIỂU ĐỒ: K={optimal_k} (có thể điều chỉnh)")
 
-    # 4. Trực quan hóa dữ liệu (Biểu đồ trục kép)
-    fig, ax1 = plt.subplots(figsize=(12, 8))
-
-    # Trục Y thứ nhất (WCSS - Đường màu đỏ)
-    ax1.set_xlabel('Số lượng cụm (K)', fontsize=12, fontweight='bold')
-    ax1.set_ylabel('WCSS (Training Cost)', color='tab:red', fontsize=12, fontweight='bold')
-    ax1.plot(k_values, wcss_costs, marker='o', color='tab:red', linewidth=2, label='WCSS (Elbow)')
-    ax1.tick_params(axis='y', labelcolor='tab:red')
-    ax1.grid(True, linestyle='--', alpha=0.3)
-
-    # Đánh dấu optimal K
-    ax1.axvline(x=optimal_k, color='red', linestyle='--', alpha=0.7, label=f'Optimal K={optimal_k}')
-
-    # Trục Y thứ hai (Silhouette - Đường nét đứt màu xanh)
-    ax2 = ax1.twinx()
-    ax2.set_ylabel('Hệ số Silhouette', color='tab:blue', fontsize=12, fontweight='bold')
-    ax2.plot(k_values, silhouette_scores, marker='s', color='tab:blue', linewidth=2, linestyle='dashed', label='Silhouette')
-    ax2.tick_params(axis='y', labelcolor='tab:blue')
-
-    # Định dạng đồ thị
-    plt.title('Đánh giá Mô hình KMeans: Phương pháp Khuỷu tay & Hệ số Silhouette', fontsize=14, pad=15, fontweight='bold')
-
-    # Legend
-    lines1, labels1 = ax1.get_legend_handles_labels()
-    lines2, labels2 = ax2.get_legend_handles_labels()
-    ax1.legend(lines1 + lines2, labels1 + labels2, loc='upper right')
-
-    plt.tight_layout()
-    plt.show()
 
     # Trả về kết quả
     results = {
