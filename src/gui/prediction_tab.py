@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import filedialog, ttk, messagebox
+import os
 from pyspark.sql import SparkSession
 from src.utils.data_utils import load_csv_file
 from src.services.student_predictor import StudentPredictorService

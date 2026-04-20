@@ -73,11 +73,29 @@ class CareerAnalysisTab:
             lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
         )
 
-        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
         canvas.configure(yscrollcommand=scrollbar.set)
+
+        # Cho phép scroll bằng chuột - Chỉ khi chuột nằm trên panel này
+        def _on_mousewheel(event):
+            canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+        
+        def _bind_mouse(event):
+            canvas.bind_all("<MouseWheel>", _on_mousewheel)
+        def _unbind_mouse(event):
+            canvas.unbind_all("<MouseWheel>")
+            
+        canvas.bind("<Enter>", _bind_mouse)
+        canvas.bind("<Leave>", _unbind_mouse)
 
         canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
+
+        # Đồng bộ chiều rộng của frame với canvas
+        def _configure_canvas(event):
+            canvas.itemconfig(canvas_window, width=event.width)
+        canvas.bind("<Configure>", _configure_canvas)
+
+        canvas_window = canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
 
         # === HEADER ===
         tk.Label(
@@ -88,6 +106,7 @@ class CareerAnalysisTab:
             font=("Arial", 11, "bold"),
             pady=10
         ).pack(fill="x")
+
 
         # === NUT TAI CSV ===
         tk.Button(
@@ -124,17 +143,18 @@ class CareerAnalysisTab:
         self.entry_search_sv = tk.Entry(scrollable_frame)
         self.entry_search_sv.pack(fill="x", padx=10, pady=5)
 
+
+
         # === NUT DANH GIA ===
         tk.Button(
             scrollable_frame,
-            text="DANH GIA SAN SANG",
+            text="🚀 DANH GIA SAN SANG",
             command=self.analyze_career,
-            bg="#8e44ad",
+            bg="#8e44ad", 
             fg="white",
             font=("Arial", 11, "bold"),
-            pady=10
+            pady=12
         ).pack(fill="x", padx=10, pady=15)
-
 
         # === NUT XUAT CSV ===
         tk.Button(
