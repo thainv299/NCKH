@@ -168,14 +168,8 @@ class SubjectAnalyzer:
         # Chất lượng (KMeans Clustering)
         try:
             sdf = SubjectReadinessClustering.cluster(sdf, model_path=model_path)
-            sdf = sdf.withColumn(
-                "ChatLuong",
-                when(col("ChatLuongCluster").contains("Kém"), 
-                     "Không ổn định / Cần cải thiện")
-                .when(col("ChatLuongCluster").contains("Xuất sắc"),
-                      "Tốt & đồng đều")
-                .otherwise("Ổn định")
-            )
+            # Sử dụng trực tiếp nhãn từ phân cụm đã được định nghĩa chuẩn ở ML logic
+            sdf = sdf.withColumn("ChatLuong", col("ChatLuongCluster"))
             sdf = sdf.drop("ChatLuongCluster")
         except Exception as e:
             # Fallback về rule-based nếu clustering thất bại

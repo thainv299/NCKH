@@ -282,7 +282,6 @@ class SubjectAnalysisTab:
             # Luôn ưu tiên dùng đường dẫn tuyệt đối để tránh nhầm lẫn
             abs_path = os.path.abspath(dirname)
             self.model_path.set(abs_path)
-            print(f"📂 Đã chọn mô hình mới: {abs_path}")
     
     def create_right_panel(self):
         """Tạo panel hiển thị bên phải"""
@@ -772,7 +771,6 @@ class SubjectAnalysisTab:
 
         try:
             model_p = self.model_path.get()
-            print(f"🚀 Bắt đầu phân tích môn học với mô hình: {model_p}")
             result_sdf = SubjectAnalyzer.analyze_all_subjects(self.spark_df, model_path=model_p)
             results = result_sdf.collect()
 
