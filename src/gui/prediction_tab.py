@@ -5,6 +5,8 @@ from pyspark.sql import SparkSession
 from src.utils.data_utils import load_csv_file
 from src.services.student_predictor import StudentPredictorService
 from src.gui.student_detail_pop_up import CLUSTER_INFO, StudentDetailPopup
+from src.utils.async_task import AsyncTaskRunner
+from src.gui.components.loading_overlay import LoadingOverlay
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -50,6 +52,11 @@ class StudentPredictionTab:
         self.spark         = None
         self._row_data_map = {}
         self.model_path    = tk.StringVar(value="models/student_analysis_kmeans_model")
+        
+        # Tiện ích
+        self.task_runner = AsyncTaskRunner(self.parent.winfo_toplevel())
+        self.loading = LoadingOverlay(self.parent.winfo_toplevel())
+
         self.create_layout()
 
     def get_spark(self):
@@ -161,24 +168,31 @@ class StudentPredictionTab:
         if not path:
             return
 
-        self.status_label.config(text="⏳  Đang xử lý...", fg="#f59e0b")
-        self.parent.update_idletasks()
+        self.loading.show()
+        self.status_label.config(text="⏳  Đang tính toán...", fg="#f59e0b")
+        
+        # Chạy logic Spark & ML ngầm
+        self.task_runner.run_task(
+            self._do_predict_background,
+            args=(path,),
+            callback=self._on_prediction_done
+        )
 
-        try:
-            spark     = self.get_spark()
-            spark_df  = load_csv_file(spark, path)
-            model_p   = self.model_path.get()
-            result    = StudentPredictorService.predict_students(spark_df, spark, model_path=model_p)
-            result_pd = result.limit(2000).toPandas()
-            self.show_table(result_pd)
-            self.status_label.config(
-                text=(f"✅  Đã tải {len(result_pd)} sinh viên"
-                      " – nhấn vào dòng để xem chi tiết"),
-                fg="#10b981"
-            )
-        except Exception as e:
-            messagebox.showerror("Lỗi", str(e))
-            self.status_label.config(text="❌  Lỗi khi tải dữ liệu", fg="#ef4444")
+    def _do_predict_background(self, path):
+        spark_session = self.get_spark()
+        spark_df  = load_csv_file(spark_session, path)
+        model_p   = self.model_path.get()
+        result    = StudentPredictorService.predict_students(spark_df, spark_session, model_path=model_p)
+        return result.limit(2000).toPandas()
+
+    def _on_prediction_done(self, result_pd):
+        self.loading.hide()
+        self.show_table(result_pd)
+        self.status_label.config(
+            text=(f"✅  Đã tải {len(result_pd)} sinh viên"
+                    " – nhấn vào dòng để xem chi tiết"),
+            fg="#10b981"
+        )
 
     # ── Show Table ─────────────────────────────────────────────────────────
     def show_table(self, df):

@@ -3,7 +3,7 @@ import numpy as np
 import random
 import math
 num_students = 1000   
-output_file = "data_demo_1.csv"
+output_file = "data/input/data_demo_1.csv"
 
 subjects = [
     '11401','17102','17103','17200','17222','11124','17206','17202',
