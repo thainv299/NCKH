@@ -6,7 +6,7 @@ from pyspark.ml.clustering import KMeans, KMeansModel
 
 class ReadinessClustering:
     @staticmethod
-    def cluster(df, k=3, seed=42):
+    def cluster(df, k=3, seed=42, model_path=None):
         """
         Đánh giá tính sẵn sàng bằng cách dùng mô hình KMeans tuyệt đối (Pre-trained)
         hoặc fallback về fit-on-the-fly.
@@ -21,17 +21,18 @@ class ReadinessClustering:
         assembler = VectorAssembler(inputCols=feature_cols, outputCol="features")
         df_vec = assembler.transform(df)
 
-        # Định tuyến lấy mô hình pre-trained
-        model_path = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))),
-            "models", "readiness_kmeans_model"
-        )
+        # Nếu không có model_path, dùng mặc định
+        if not model_path:
+            model_path = os.path.join(
+                os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))),
+                "models", "career_readiness_kmeans_model"
+            )
         
         try:
             model = KMeansModel.load(model_path)
             df_clustered = model.transform(df_vec)
-        except Exception:
-            # Fallback nếu mất file
+        except Exception as e:
+            print(f"Không thể tải mô hình nghề nghiệp từ {model_path}, fitting new: {e}")
             kmeans = KMeans(k=k, seed=seed, featuresCol="features", predictionCol="cluster")
             model = kmeans.fit(df_vec)
             df_clustered = model.transform(df_vec)

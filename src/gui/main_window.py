@@ -14,7 +14,7 @@ class MainWindow:
     def __init__(self, root):
         self.root = root
         self.root.title("Hệ thống Báo cáo Phân tích")
-        self.root.geometry("1200x750")
+        self.root.geometry("1024x650")
         
         # Cấu hình style
         self.setup_style()

@@ -19,6 +19,7 @@ class SubjectAnalysisTab:
         self.analysis_results = {}  # key = MaMH
         self.listbox_subjects = None
         self.all_subjects_list = []   # lưu toàn bộ môn để filter
+        self.model_path = tk.StringVar(value="models/subject_quality_kmeans_model")
         # Tạo giao diện
         self.create_layout()
     
@@ -52,16 +53,29 @@ class SubjectAnalysisTab:
             lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
         )
         
-        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
         canvas.configure(yscrollcommand=scrollbar.set)
-        
-        # Cho phép scroll bằng chuột
+
+        # Cho phép scroll bằng chuột - Chỉ khi chuột nằm trên panel này
         def _on_mousewheel(event):
             canvas.yview_scroll(int(-1*(event.delta/120)), "units")
-        canvas.bind_all("<MouseWheel>", _on_mousewheel)
+        
+        def _bind_mouse(event):
+            canvas.bind_all("<MouseWheel>", _on_mousewheel)
+        def _unbind_mouse(event):
+            canvas.unbind_all("<MouseWheel>")
+            
+        canvas.bind("<Enter>", _bind_mouse)
+        canvas.bind("<Leave>", _unbind_mouse)
         
         canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
+
+        # Đồng bộ chiều rộng của frame với canvas
+        def _configure_canvas(event):
+            canvas.itemconfig(canvas_window, width=event.width)
+        canvas.bind("<Configure>", _configure_canvas)
+        
+        canvas_window = canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
         
         # Header
         tk.Label(
@@ -102,6 +116,22 @@ class SubjectAnalysisTab:
             font=("Segoe UI", 9)
         )
         self.lbl_file_status.pack(pady=2)
+
+        # 1.1 Chọn Model (Đưa lên trên để dễ thấy)
+        tk.Label(
+            frame_file, 
+            text="Mô hình huấn luyện:", 
+            bg="#f1f5f9",
+            fg="#475569",
+            font=("Segoe UI", 9, "bold")
+        ).pack(anchor="w", padx=5, pady=(5, 0))
+        
+        model_f = tk.Frame(frame_file, bg="#f1f5f9")
+        model_f.pack(fill="x", padx=5, pady=2)
+        
+        tk.Entry(model_f, textvariable=self.model_path, font=("Segoe UI", 8)).pack(side="left", fill="x", expand=True)
+        tk.Button(model_f, text="...", command=self.browse_model, width=3, font=("Segoe UI", 8)).pack(side="left", padx=2)
+
         
         # 2. Tìm kiếm & Thêm học phần
         frame_search = tk.LabelFrame(
@@ -228,8 +258,8 @@ class SubjectAnalysisTab:
             font=("Segoe UI", 9),
             activebackground="#f1f5f9"
         ).pack(anchor="w", pady=1)
-        
-        # 4. Nút Chạy Phân Tích - ĐẶT TRONG SCROLLABLE FRAME
+
+        # 4. Nút Chạy Phân Tích
         tk.Button(
             scrollable_frame,
             text="TẠO BÁO CÁO PHÂN TÍCH",
@@ -239,8 +269,19 @@ class SubjectAnalysisTab:
             font=("Segoe UI", 11, "bold"),
             relief="flat",
             cursor="hand2",
-            pady=10
-        ).pack(fill="x", padx=5, pady=8)
+            pady=12
+        ).pack(fill="x", padx=5, pady=15)
+
+
+        
+
+    def browse_model(self):
+        dirname = filedialog.askdirectory(title="Chọn thư mục model",
+                                        initialdir="models")
+        if dirname:
+            # Luôn ưu tiên dùng đường dẫn tuyệt đối để tránh nhầm lẫn
+            abs_path = os.path.abspath(dirname)
+            self.model_path.set(abs_path)
     
     def create_right_panel(self):
         """Tạo panel hiển thị bên phải"""
@@ -311,8 +352,8 @@ class SubjectAnalysisTab:
         for color, label in [
             ("#fd7e7e", "Tiêu cực"),
             ("#fcd143", "Không ổn định"),
-            ("#c4b5fd", "Bình thường"),
-            ("#5eecb3", "Tích cực"),
+            ("#c4b5fd", "Ổn định"),
+            ("#5eecb3", "Xuất sắc"),
         ]:
             row_f = tk.Frame(legend_f, bg="#e2e8f0")
             row_f.pack(side="left", padx=6)
@@ -572,16 +613,19 @@ class SubjectAnalysisTab:
         """Trả về (priority 0=xấu..3=tốt, badge_bg, badge_fg, icon, label)."""
         result = self.analysis_results.get(ma_mh)
         if not result:
-            return (2, "#c4b5fd", "#1e1b4b", "📋", "Bình thường")
-        xu = str(result.get("XuHuong") or "").strip().lower()
-        cl = str(result.get("ChatLuong") or "").strip().lower()
-        if "tiêu cực" in xu:
+            return (2, "#c4b5fd", "#1e1b4b", "📋", "Ổn định")
+        
+        # Đã đổi tên cột từ ChatLuongCluster sang ChatLuong ở bước trước
+        cl = str(result.get("ChatLuong") or "").strip()
+        
+        if "Tiêu cực" in cl:
             return (0, "#ef4444", "#ffffff", "⚡", "Tiêu cực – Cần lưu ý")
-        if "không ổn định" in cl or "cần cải thiện" in cl:
+        if "Không ổn định" in cl:
             return (1, "#f59e0b", "#1c1917", "⚠️", "Không ổn định")
-        if "tích cực" in xu:
-            return (3, "#10b981", "#ffffff", "✅", "Tích cực – Kết quả tốt")
-        return (2, "#8b5cf6", "#ffffff", "📘", "Bình thường – Ổn định")
+        if "Xuất sắc" in cl:
+            return (3, "#10b981", "#ffffff", "✅", "Xuất sắc – Kết quả tốt")
+        
+        return (2, "#8b5cf6", "#ffffff", "📘", "Ổn định")
 
     def get_subject_color(self, ma_mh):
         p, bg, fg, icon, label = self._get_group_info(ma_mh)
@@ -652,24 +696,34 @@ class SubjectAnalysisTab:
         cards_f = tk.Frame(self._report_body, bg="#f1f5f9")
         cards_f.pack(fill="x", **P)
 
-        # Màu theo giá trị
+        # Tính toán đánh giá dựa trên giá trị thực tế (không dùng nhãn cụm)
         try:
-            tb_v = float(tb)
-            tb_color = "#10b981" if tb_v >= 7.5 else ("#f59e0b" if tb_v >= 6.0 else "#ef4444")
-            tb_pct = tb_v / 10.0
-        except Exception:
-            tb_color, tb_pct = "#64748b", 0.0
+            tb_val = float(tb)
+            if tb_val >= 8.0: tb_eval = "Tốt / Giỏi"
+            elif tb_val >= 6.5: tb_eval = "Khá"
+            elif tb_val >= 5.0: tb_eval = "Trung bình"
+            else: tb_eval = "Thấp / Kém"
+            
+            tb_color = "#10b981" if tb_val >= 7.5 else ("#f59e0b" if tb_val >= 6.0 else "#ef4444")
+            tb_pct = tb_val / 10.0
+        except:
+            tb_eval, tb_color, tb_pct = "-", "#64748b", 0.0
 
         try:
-            fp_v = float(fp)
-            fp_color = "#10b981" if fp_v == 0 else ("#f59e0b" if fp_v <= 15 else "#ef4444")
-            fp_pct = max(0.0, 1.0 - fp_v / 50.0)
-        except Exception:
-            fp_color, fp_pct = "#64748b", 0.0
+            fp_val = float(fp)
+            if fp_val == 0: fp_eval = "Rất thấp"
+            elif fp_val <= 10: fp_eval = "Thấp"
+            elif fp_val <= 20: fp_eval = "Trung bình"
+            else: fp_eval = "Cao / Cảnh báo"
+            
+            fp_color = "#10b981" if fp_val <= 5 else ("#f59e0b" if fp_val <= 15 else "#ef4444")
+            fp_pct = max(0.0, 1.0 - fp_val / 50.0)
+        except:
+            fp_eval, fp_color, fp_pct = "-", "#64748b", 0.0
 
         for title, val, subtitle, color, pct in [
-            ("Điểm TB",    f"{tb}",  dokho,   tb_color, tb_pct),
-            ("Tỷ lệ rớt",  f"{fp}%", chat,    fp_color, fp_pct),
+            ("Điểm TB",    f"{tb}",  tb_eval,   tb_color, tb_pct),
+            ("Tỷ lệ rớt",  f"{fp}%", fp_eval,   fp_color, fp_pct),
         ]:
             card = tk.Frame(cards_f, bg="#e2e8f0", padx=10, pady=10)
             card.pack(side="left", expand=True, fill="x", padx=4)
@@ -692,15 +746,16 @@ class SubjectAnalysisTab:
         self._sec_title_card(self._report_body, "🔍  Đánh Giá Độ Khó")
         sec2 = tk.Frame(self._report_body, bg="#e2e8f0", padx=14, pady=12)
         sec2.pack(fill="x", padx=16, pady=(0, 8))
-        self._info_row(sec2, "Mức độ:", dokho, badge_bg)
-        self._info_row(sec2, "Điểm trung bình:", tb, badge_bg)
-        self._info_row(sec2, "Tỷ lệ rớt:", f"{fp}%", badge_bg)
+        self._info_row(sec2, "Mức độ điểm:", tb_eval, badge_bg)
+        self._info_row(sec2, "Độ khó học phần:", dokho, badge_bg)
+        self._info_row(sec2, "Tỷ lệ rớt thực tế:", fp_eval, badge_bg)
 
         # ── 3. Chất lượng giảng dạy ─────────────────────────────────────────
         self._sec_title_card(self._report_body, "📋  Chất Lượng Giảng Dạy")
         sec3 = tk.Frame(self._report_body, bg="#e2e8f0", padx=14, pady=12)
         sec3.pack(fill="x", padx=16, pady=(0, 8))
-        self._info_row(sec3, "Đánh giá:", chat, badge_bg)
+        self._info_row(sec3, "Phân loại cụm:", group_label, badge_bg)
+        self._info_row(sec3, "Đánh giá chung:", chat, badge_bg)
 
         # ── 4. Xu hướng học tập ─────────────────────────────────────────────
         self._sec_title_card(self._report_body, "📈  Xu Hướng Học Tập")
@@ -715,7 +770,8 @@ class SubjectAnalysisTab:
             return
 
         try:
-            result_sdf = SubjectAnalyzer.analyze_all_subjects(self.spark_df)
+            model_p = self.model_path.get()
+            result_sdf = SubjectAnalyzer.analyze_all_subjects(self.spark_df, model_path=model_p)
             results = result_sdf.collect()
 
             if not results:
@@ -761,8 +817,8 @@ class SubjectAnalysisTab:
             GROUP_LABELS = {
                 0: ("🔴  Tiêu Cực – Cần Lưu Ý",    "#ef4444", "#ffffff"),
                 1: ("🟡  Không Ổn Định",              "#f59e0b", "#1c1917"),
-                2: ("🟣  Bình Thường – Ổn Định",      "#8b5cf6", "#ffffff"),
-                3: ("🟢  Tích Cực – Kết Quả Tốt",     "#10b981", "#ffffff"),
+                2: ("🟣  Ổn Định",                    "#8b5cf6", "#ffffff"),
+                3: ("🟢  Xuất Sắc – Kết Quả Tốt",     "#10b981", "#ffffff"),
             }
             current_group = None
 

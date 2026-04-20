@@ -8,9 +8,9 @@ from src.utils.data_utils import convert_to_4_scale
 class StudentPredictorService:
 
     @staticmethod
-    def predict_students(spark_df, spark):
+    def predict_students(spark_df, spark, model_path=None):
         from src.ml.unsupervised.risk_clustering import RiskClustering
         
         # ML Logic has been delegated to src/ml component
-        result_df = RiskClustering.cluster(spark_df)
+        result_df = RiskClustering.cluster(spark_df, model_path=model_path)
         return result_df
