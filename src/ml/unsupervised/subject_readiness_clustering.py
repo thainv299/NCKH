@@ -77,10 +77,10 @@ class SubjectReadinessClustering:
         
         # Map rank → label
         label_by_rank = [
-            "Xuất sắc - Tốt",      # rank 0
-            "Ổn định",             # rank 1
-            "Không ổn định",       # rank 2
-            "Tiêu cực - Kém"       # rank 3
+            "Xuất sắc",       # rank 0
+            "Khá",            # rank 1
+            "Trung bình",     # rank 2
+            "Tiêu cực"        # rank 3
         ]
         
         mapping_expr = F.lit("Chưa xác định")

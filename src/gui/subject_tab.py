@@ -242,7 +242,7 @@ class SubjectAnalysisTab:
         ).pack(anchor="w", pady=1)
         tk.Checkbutton(
             frame_opt, 
-            text="Chất lượng giảng dạy", 
+            text="Kết quả lớp học phần", 
             variable=self.ck_chatluong, 
             bg="#f1f5f9",
             fg="#1e293b",
@@ -751,7 +751,7 @@ class SubjectAnalysisTab:
         self._info_row(sec2, "Tỷ lệ rớt thực tế:", fp_eval, badge_bg)
 
         # ── 3. Chất lượng giảng dạy ─────────────────────────────────────────
-        self._sec_title_card(self._report_body, "📋  Chất Lượng Giảng Dạy")
+        self._sec_title_card(self._report_body, "📋  Kết quả lớp Học phần")
         sec3 = tk.Frame(self._report_body, bg="#e2e8f0", padx=14, pady=12)
         sec3.pack(fill="x", padx=16, pady=(0, 8))
         self._info_row(sec3, "Phân loại cụm:", group_label, badge_bg)
