@@ -64,6 +64,40 @@ class CareerAnalyzerSpark:
             pass
         return jobs
 
+    @staticmethod
+    def fetch_topdev_data():
+        """Lấy dữ liệu macro từ TopDev API (giống crawl_market_data.py)"""
+        API_URL = "https://api.topdev.vn/td/v2/job-categories/job-category-with-all-type?locale=vi_VN"
+        import requests
+        try:
+            response = requests.get(API_URL, timeout=10)
+            response.raise_for_status()
+            data = response.json()
+            categories = data.get("data", [])
+            
+            job_stats = []
+            for cat in categories:
+                cat_name = cat.get("name", "Unknown")
+                if cat_name != "IT": continue
+                    
+                roles = cat.get("roles", [])
+                if not roles:
+                    job_stats.append({
+                        "Category": cat_name, "Role": cat_name, 
+                        "JobCount": cat.get("job_count", 0)
+                    })
+                else:
+                    for role in roles:
+                        job_stats.append({
+                            "Category": cat_name,
+                            "Role": role.get("name", "Unknown"),
+                            "JobCount": role.get("job_count", 0)
+                        })
+            return job_stats
+        except Exception as e:
+            print(f"Lỗi API: {e}")
+            return None
+
     # ==========================
     # 2. XỬ LÝ SINH VIÊN
     # ==========================
