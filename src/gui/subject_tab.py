@@ -4,6 +4,8 @@ import os
 from src.utils.data_utils import load_csv_file
 from src.services.subject_analyzer import SubjectAnalyzer
 from config.spark_config import spark
+from src.utils.async_task import AsyncTaskRunner
+from src.gui.components.loading_overlay import LoadingOverlay
 class SubjectAnalysisTab:
     """
     Class quản lý giao diện và logic Tab phân tích học phần
@@ -20,6 +22,11 @@ class SubjectAnalysisTab:
         self.listbox_subjects = None
         self.all_subjects_list = []   # lưu toàn bộ môn để filter
         self.model_path = tk.StringVar(value="models/subject_quality_kmeans_model")
+        
+        # Tiện ích
+        self.task_runner = AsyncTaskRunner(self.parent.winfo_toplevel())
+        self.loading = LoadingOverlay(self.parent.winfo_toplevel())
+
         # Tạo giao diện
         self.create_layout()
     
@@ -465,31 +472,34 @@ class SubjectAnalysisTab:
     # ================= LOGIC XỬ LÝ =================
     
     def load_csv(self):
-        """Tải file CSV vào Spark DataFrame và hiển thị mẫu lên UI"""
+        """Tải file CSV vào Spark DataFrame và hiển thị mẫu lên UI (Chạy ngầm)"""
         path = filedialog.askopenfilename(filetypes=[("CSV files", "*.csv")])
         if not path:
             return
         
-        try:
-            # đọc thẳng bằng Spark (helper tự phát hiện dấu phân cách)
-            self.spark_df = load_csv_file(spark, path)
-            self.spark_df = self.spark_df.cache()
+        self.loading.show()
+        self.task_runner.run_task(load_csv_file, args=(spark, path), callback=lambda df: self._on_csv_loaded(df, path))
 
-            # reset lựa chọn
-            self.selected_subjects_codes = []
-            self.listbox_selected.delete(0, tk.END)
+    def _on_csv_loaded(self, df, path):
+        self.spark_df = df.cache()
+        # Đếm số dòng chạy ngầm
+        self.task_runner.run_task(df.count, callback=lambda count: self._finish_load_csv(count, path, df))
 
-            # tạo bảng mẫu để hiển thị (giới hạn số dòng để tránh chậm)
-            sample_df = self.spark_df.limit(2000).toPandas()
-            self.show_table(sample_df)
-            total = self.spark_df.count()
-            self.lbl_file_status.config(
-                text=f"✓ {os.path.basename(path)} ({total} dòng)", 
-                fg="#10b981"
-            )
-            messagebox.showinfo("Thành công", "Tải dữ liệu thành công!")
-        except Exception as e:
-            messagebox.showerror("Lỗi", str(e))
+    def _finish_load_csv(self, count, path, df):
+        self.loading.hide()
+        # reset lựa chọn
+        self.selected_subjects_codes = []
+        self.listbox_selected.delete(0, tk.END)
+
+        # tạo bảng mẫu
+        sample_df = df.limit(2000).toPandas()
+        self.show_table(sample_df)
+        
+        self.lbl_file_status.config(
+            text=f"✓ {os.path.basename(path)} ({count} dòng)", 
+            fg="#10b981"
+        )
+        messagebox.showinfo("Thành công", f"Tải dữ liệu thành công! ({count} dòng)")
     
     def show_table(self, df):
         """Hiển thị dữ liệu lên Treeview"""
@@ -764,21 +774,33 @@ class SubjectAnalysisTab:
         self._info_row(sec4, "Nhận định:", xu, badge_bg)
 
     def generate_report(self):
-        """Tạo báo cáo phân tích – sort+group theo mức độ cảnh báo"""
+        """Tạo báo cáo phân tích – Chạy ngầm tránh treo UI"""
         if self.spark_df is None:
             messagebox.showwarning("Cảnh báo", "Chưa có dữ liệu nguồn!")
             return
 
-        try:
-            model_p = self.model_path.get()
-            result_sdf = SubjectAnalyzer.analyze_all_subjects(self.spark_df, model_path=model_p)
-            results = result_sdf.collect()
+        model_p = self.model_path.get()
+        self.loading.show()
+        
+        # Chạy phân tích trong background
+        self.task_runner.run_task(
+            SubjectAnalyzer.analyze_all_subjects, 
+            args=(self.spark_df, model_p),
+            callback=self._on_analysis_background_done
+        )
 
+    def _on_analysis_background_done(self, result_sdf):
+        # Sau khi có SDF, collect kết quả cũng chạy ngầm
+        self.task_runner.run_task(result_sdf.collect, callback=self._on_collect_done)
+
+    def _on_collect_done(self, results):
+        self.loading.hide()
+        try:
             if not results:
                 messagebox.showwarning("Cảnh báo", "Không có dữ liệu học phần để phân tích!")
                 return
 
-            # Lưu kết quả - convert sang dict để tránh lỗi trên Spark Row
+            # Lưu kết quả
             self.analysis_results = {row["MaMH"]: row.asDict() for row in results}
 
             # Convert results sang list dict luôn
@@ -850,7 +872,6 @@ class SubjectAnalysisTab:
                 self.all_subjects_list.append(ma_mh)
 
             messagebox.showinfo("Hoàn tất", "Đã tạo báo cáo. Chọn môn để xem chi tiết!")
-
         except Exception as e:
             messagebox.showerror("Lỗi phân tích", str(e))
 

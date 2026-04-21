@@ -42,8 +42,8 @@ class ReadinessClustering:
         cluster_gpa = [(i, float(c[0])) for i, c in enumerate(centers)]
         cluster_gpa.sort(key=lambda x: x[1], reverse=True)
 
-        labels = ["San sang cao", "Dang phat trien", "Chua san sang"]
-        mapping_expr = F.lit("Chua xac dinh")
+        labels = ["Sẵn sàng cao", "Đang phát triển", "Chưa sẵn sàng"]
+        mapping_expr = F.lit("Chưa xác định")
         for rank, (cid, _) in enumerate(cluster_gpa):
             label = labels[rank] if rank < len(labels) else labels[-1]
             mapping_expr = F.when(F.col("cluster") == cid, F.lit(label)).otherwise(mapping_expr)
